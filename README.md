@@ -77,8 +77,8 @@ pytest
 
 ## Configuration
 
-- Channel list: `/home/runner/work/CDM_INFLUX/CDM_INFLUX/Nazano/CDM_INFLUX/config/channels.yml`
-- Demo dataset: `/home/runner/work/CDM_INFLUX/CDM_INFLUX/Nazano/CDM_INFLUX/data/demo_videos.json`
+- Channel list: `config/channels.yml`
+- Demo dataset: `data/demo_videos.json`
 - Database path can be overridden with `CDM_INFLUX_DB_PATH`
 
 ## Notes for future evolution
