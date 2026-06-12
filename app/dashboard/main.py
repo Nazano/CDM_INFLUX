@@ -193,7 +193,7 @@ def render_landing_page(repository) -> None:
 
 
 def render_match_card(match: dict) -> None:
-    st.markdown(_build_match_card_html(match), unsafe_allow_html=True)
+    st.html(_build_match_card_html(match))
     detail_col, run_col = st.columns(2)
     with detail_col:
         if st.button("Voir les détails", key=f"details-{match['id']}", use_container_width=True):
@@ -231,7 +231,7 @@ def render_match_detail(repository, selected_match_id: str | None = None) -> Non
             st.query_params.clear()
             st.rerun()
 
-    st.markdown(_build_match_detail_header(selected_match), unsafe_allow_html=True)
+    st.html(_build_match_detail_header(selected_match))
 
     metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
     metric_col1.metric("Statut", _CARD_STYLE[_get_match_state(selected_match)]["label"])
@@ -661,7 +661,7 @@ def render_analysis_queue(repository) -> None:
         runs = repository.list_analysis_runs(status=status_val, include_ignored=False)
         if status_val in ("success", "failed"):
             runs = runs[:5]
-        with st.expander(f"{icon} {status_label} ({len(runs)})", expanded=(status_val in ("running", "queued"))):
+        with st.expander(f"{icon} {status_label} ({len(runs)})", expanded=bool(runs)):
             if not runs:
                 st.info("Aucun run dans cette catégorie.")
             else:
@@ -1005,7 +1005,7 @@ def _build_match_card_html(match: dict) -> str:
         </div>"""
 
     return f"""
-    <a href="{href}" style="text-decoration:none;color:inherit;">
+    <a href="{href}" target="_top" style="text-decoration:none;color:inherit;">
         <div style="
             background:{state['background']};
             border:2px solid {state['border']};
