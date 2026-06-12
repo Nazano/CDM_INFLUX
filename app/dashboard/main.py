@@ -76,12 +76,37 @@ _FIFA_TO_ISO2 = {
 
 _ADVANCED_PAGES = [
     "Historique des analyses",
+    "Santé des analyses",
+    "Queue",
     "Explorateur de vidéos",
-    "Détail d’une vidéo",
+    "Détail d'une vidéo",
     "Comparateur de créateurs",
     "Pronos par match",
     "Fiabilité",
 ]
+
+_STEP_ICONS: dict[str, str] = {
+    "search": "🔍",
+    "transcripts": "📄",
+    "predictions": "🧠",
+    "finalize": "✅",
+}
+
+_STATUS_ICONS: dict[str, str] = {
+    "pending": "⏳",
+    "running": "⏱️",
+    "success": "✅",
+    "failed": "❌",
+    "skipped": "⏭️",
+}
+
+_RUN_STATUS_LABELS: dict[str, str] = {
+    "queued": "🕐 En attente",
+    "running": "⏱️ En cours",
+    "success": "✅ Succès",
+    "failed": "❌ Échec",
+    "cancelled": "🚫 Annulé",
+}
 
 
 def run() -> None:
@@ -101,9 +126,15 @@ def run() -> None:
         render_landing_page(repository)
     elif page == "Détail match":
         render_match_detail(repository, selected_match_id)
+    elif page == "Historique des analyses":
+        render_analysis_history(repository)
+    elif page == "Santé des analyses":
+        render_analysis_health(repository)
+    elif page == "Queue":
+        render_analysis_queue(repository)
     elif page == "Explorateur de vidéos":
         render_video_explorer(repository)
-    elif page == "Détail d’une vidéo":
+    elif page == "Détail d'une vidéo":
         render_video_detail(repository)
     elif page == "Comparateur de créateurs":
         render_creator_comparison(repository)
@@ -207,7 +238,16 @@ def render_match_detail(repository, selected_match_id: str | None = None) -> Non
     metric_col3.metric("Vidéos analysées", selected_match.get("analyzed_video_count", 0))
     metric_col4.metric("Score prédit", selected_match.get("predicted_score") or "—")
 
-    render_match_videos(repository, preselected_match_id=selected_match_id)
+    tab_videos, tab_analyses, tab_pronos = st.tabs(["🎥 Vidéos", "🔬 Analyses", "📊 Pronostics"])
+
+    with tab_videos:
+        render_match_videos(repository, preselected_match_id=selected_match_id)
+
+    with tab_analyses:
+        render_match_analyses_tab(repository, selected_match_id)
+
+    with tab_pronos:
+        render_match_consensus_for_match(repository, selected_match_id)
 
 
 def render_overview(repository) -> None:
@@ -426,16 +466,498 @@ def render_match_videos(repository, preselected_match_id: str | None = None) -> 
             _open_match_detail(match_id)
 
 
-def _run_match_pipeline(match_id: str) -> None:
-    with st.spinner("Récupération des vidéos et analyse en cours…"):
-        fetched_count = fetch_videos_for_match(match_id, 5)
-        result = analyze_match_videos(match_id)
-    st.success(
-        f"Run terminé : {fetched_count} vidéo(s) récupérée(s), "
-        f"{result['transcripts']} transcript(s) extrait(s), "
-        f"{result['predictions']} pronostic(s) détecté(s)."
+def render_match_analyses_tab(repository, match_id: str) -> None:
+    """Pipeline view inside the match detail Analyses tab."""
+    st.subheader("🔬 Lancer une analyse")
+
+    run_col1, run_col2, run_col3 = st.columns([2, 1, 1])
+    with run_col1:
+        max_results = st.slider("Résultats max par requête", 1, 10, 5, key=f"pipeline-limit-{match_id}")
+    with run_col2:
+        step_filter_options = {
+            "Pipeline complet": None,
+            "Recherche uniquement": "search",
+            "Transcripts uniquement": "transcripts",
+            "Pronostics uniquement": "predictions",
+        }
+        step_label = st.selectbox("Étapes", list(step_filter_options.keys()), key=f"pipeline-step-{match_id}")
+        step_filter = step_filter_options[step_label]
+    with run_col3:
+        note = st.text_input("Note (optionnel)", key=f"pipeline-note-{match_id}")
+
+    if st.button("▶ Lancer le pipeline", key=f"pipeline-run-{match_id}", use_container_width=True, type="primary"):
+        _run_pipeline_with_live_progress(match_id, max_results=max_results, step_filter=step_filter, note=note or None)
+
+    st.divider()
+    st.subheader("⏰ Planifier une analyse")
+    sched_col1, sched_col2, sched_col3 = st.columns([2, 2, 1])
+    with sched_col1:
+        sched_date = st.date_input("Date", key=f"sched-date-{match_id}")
+    with sched_col2:
+        sched_time = st.time_input("Heure (UTC)", key=f"sched-time-{match_id}")
+    with sched_col3:
+        sched_note = st.text_input("Note", key=f"sched-note-{match_id}")
+
+    if st.button("📅 Planifier", key=f"sched-btn-{match_id}", use_container_width=True):
+        import datetime as _dt
+        scheduled_for = _dt.datetime.combine(sched_date, sched_time, tzinfo=_dt.timezone.utc)
+        run_id = schedule_analysis_run(match_id, scheduled_for=scheduled_for, note=sched_note or None)
+        st.success(f"✅ Run planifié pour le {scheduled_for.strftime('%d/%m/%Y %H:%M UTC')} (ID: `{run_id}`)")
+        st.rerun()
+
+    st.divider()
+    st.subheader("📋 Historique des runs pour ce match")
+    runs = repository.list_analysis_runs(match_id=match_id)
+    if not runs:
+        st.info("Aucun run lancé pour ce match.")
+        return
+
+    for run in runs:
+        _render_run_row(repository, run, show_match=False)
+
+
+def render_analysis_history(repository) -> None:
+    """Full analysis history page with filters."""
+    st.title("📋 Historique des analyses")
+
+    matches = repository.get_matches()
+    match_options = {"Tous": None}
+    match_options.update({
+        f"{m.get('home_team') or 'TBD'} vs {m.get('away_team') or 'TBD'} ({m['tournament_stage']})": m["id"]
+        for m in matches
+    })
+
+    filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
+    with filter_col1:
+        selected_match_label = st.selectbox("Match", list(match_options.keys()))
+        filter_match_id = match_options[selected_match_label]
+    with filter_col2:
+        status_options = {"Tous": None, "✅ Succès": "success", "❌ Échec": "failed", "⏱️ En cours": "running", "🕐 En attente": "queued"}
+        selected_status_label = st.selectbox("Statut", list(status_options.keys()))
+        filter_status = status_options[selected_status_label]
+    with filter_col3:
+        trigger_options = {"Tous": None, "Manuel": "manual", "Auto": "auto"}
+        selected_trigger_label = st.selectbox("Déclencheur", list(trigger_options.keys()))
+        filter_trigger = trigger_options[selected_trigger_label]
+    with filter_col4:
+        include_ignored = st.checkbox("Inclure les ignorés", value=False)
+
+    date_col1, date_col2 = st.columns(2)
+    with date_col1:
+        start_date = st.date_input("Depuis", value=None, key="history-start-date")
+    with date_col2:
+        end_date = st.date_input("Jusqu'au", value=None, key="history-end-date")
+
+    runs = repository.list_analysis_runs(
+        match_id=filter_match_id,
+        status=filter_status,
+        trigger_type=filter_trigger,
+        include_ignored=include_ignored,
+        start_date=start_date.isoformat() if start_date else None,
+        end_date=end_date.isoformat() if end_date else None,
     )
-    _open_match_detail(match_id)
+
+    if not runs:
+        st.info("Aucun run ne correspond aux critères.")
+        return
+
+    st.caption(f"{len(runs)} run(s) trouvé(s)")
+
+    # Comparison mode
+    with st.expander("⚖️ Comparer deux runs", expanded=False):
+        run_id_options = {r["id"]: f"{r['id'][:16]}… · {r.get('home_team', 'TBD')} vs {r.get('away_team', 'TBD')} · {r.get('started_at', '')[:10]}" for r in runs}
+        if len(run_id_options) >= 2:
+            ids = list(run_id_options.keys())
+            cmp_col1, cmp_col2 = st.columns(2)
+            with cmp_col1:
+                baseline_id = st.selectbox("Run baseline", ids, format_func=lambda x: run_id_options[x], key="cmp-baseline")
+            with cmp_col2:
+                candidate_id = st.selectbox("Run candidat", ids[1:], format_func=lambda x: run_id_options[x], key="cmp-candidate")
+            if st.button("⚖️ Comparer", key="cmp-btn"):
+                _render_run_comparison(repository, baseline_id, candidate_id)
+        else:
+            st.info("Au moins deux runs sont nécessaires pour une comparaison.")
+
+    st.divider()
+    for run in runs:
+        _render_run_row(repository, run, show_match=True)
+
+
+def render_analysis_health(repository) -> None:
+    """Health/metrics dashboard for analyses."""
+    st.title("🩺 Santé des analyses")
+    metrics = repository.get_analysis_health_metrics()
+
+    total = metrics["total_runs"]
+    successful = metrics["successful_runs"]
+    failed = metrics["failed_runs"]
+    avg_dur = metrics["avg_duration_seconds"]
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Runs totaux", total)
+    m2.metric("Taux de succès", f"{round((successful / total) * 100, 1) if total else 0}%")
+    m3.metric("Runs échoués", failed)
+    m4.metric("Durée moyenne", f"{int(avg_dur)}s" if avg_dur else "—")
+
+    st.divider()
+
+    # Step success rates
+    step_data = metrics.get("step_success", [])
+    if step_data:
+        st.subheader("Taux de succès par étape")
+        step_df = pd.DataFrame(step_data)
+        step_df["étape"] = step_df["step_key"].map(lambda k: f"{_STEP_ICONS.get(k, '')} {k}")
+        step_df["taux_succès"] = step_df["success_rate"]
+        fig = px.bar(step_df, x="étape", y="taux_succès", title="% succès par étape du pipeline", range_y=[0, 100])
+        st.plotly_chart(fig, use_container_width=True)
+
+    # Transcript unavailability
+    unavail_rate = metrics.get("transcript_unavailable_rate", 0)
+    st.metric("% transcripts indisponibles", f"{unavail_rate}%")
+
+    # Timeline
+    timeline = metrics.get("timeline", [])
+    if timeline:
+        st.subheader("Évolution des runs dans le temps")
+        timeline_df = pd.DataFrame(timeline)
+        if not timeline_df.empty:
+            fig2 = px.line(timeline_df, x="day", y=["runs", "successes"], title="Runs par jour", labels={"value": "Nombre", "day": "Jour"})
+            st.plotly_chart(fig2, use_container_width=True)
+
+
+def render_analysis_queue(repository) -> None:
+    """Queue view: pending, running, done."""
+    st.title("🗂️ Queue des analyses")
+
+    matches = repository.get_matches()
+    match_options = {m["id"]: f"{m.get('home_team') or 'TBD'} vs {m.get('away_team') or 'TBD'} ({m['tournament_stage']})" for m in matches}
+
+    st.subheader("📅 Planifier un run")
+    sched_match_label = st.selectbox("Match", list(match_options.values()), key="queue-match")
+    sched_match_id = next(k for k, v in match_options.items() if v == sched_match_label)
+    q_col1, q_col2, q_col3 = st.columns([2, 2, 2])
+    with q_col1:
+        q_date = st.date_input("Date (UTC)", key="queue-date")
+    with q_col2:
+        q_time = st.time_input("Heure (UTC)", key="queue-time")
+    with q_col3:
+        q_note = st.text_input("Note", key="queue-note")
+    if st.button("📅 Ajouter à la queue", key="queue-add-btn", use_container_width=True):
+        import datetime as _dt
+        scheduled_for = _dt.datetime.combine(q_date, q_time, tzinfo=_dt.timezone.utc)
+        run_id = schedule_analysis_run(sched_match_id, scheduled_for=scheduled_for, note=q_note or None)
+        st.success(f"✅ Run planifié (ID: `{run_id}`)")
+        st.rerun()
+
+    st.divider()
+
+    for status_label, status_val, icon in [
+        ("⏱️ En cours", "running", "🔄"),
+        ("🕐 En attente", "queued", "⏰"),
+        ("✅ Récents (succès)", "success", "✅"),
+        ("❌ Récents (échec)", "failed", "❌"),
+    ]:
+        runs = repository.list_analysis_runs(status=status_val, include_ignored=False)
+        if status_val in ("success", "failed"):
+            runs = runs[:5]
+        with st.expander(f"{icon} {status_label} ({len(runs)})", expanded=(status_val in ("running", "queued"))):
+            if not runs:
+                st.info("Aucun run dans cette catégorie.")
+            else:
+                for run in runs:
+                    _render_run_row_compact(repository, run, match_options)
+
+
+def render_match_consensus_for_match(repository, match_id: str) -> None:
+    """Pronostics tab inside match detail."""
+    from app.services.ranking import rank_predictions
+    consensus = repository.get_match_consensus()
+    match_consensus = [r for r in consensus if r.get("subject") and match_id in (r.get("subject") or "")]
+    if not match_consensus:
+        st.info("Aucun pronostic disponible pour ce match. Lancez d'abord une analyse.")
+        return
+    df = pd.DataFrame(match_consensus)
+    st.subheader("Consensus brut")
+    st.dataframe(df, use_container_width=True)
+
+
+def _render_run_row(repository, run: dict, *, show_match: bool) -> None:
+    """Render a single run as an expander with pipeline steps, logs, and artifacts."""
+    run_id = run["id"]
+    status = run.get("status", "unknown")
+    trigger = run.get("trigger_type", "manual")
+    started = run.get("started_at", "")[:16].replace("T", " ")
+    completed = run.get("completed_at") or ""
+    if completed:
+        completed = completed[:16].replace("T", " ")
+
+    # Duration
+    duration_str = ""
+    if run.get("started_at") and run.get("completed_at"):
+        try:
+            from datetime import datetime as _dt
+            s = _dt.fromisoformat(run["started_at"].replace("Z", "+00:00"))
+            e = _dt.fromisoformat(run["completed_at"].replace("Z", "+00:00"))
+            dur = int((e - s).total_seconds())
+            duration_str = f"⏱ {dur}s"
+        except Exception:
+            pass
+
+    label_parts = [_RUN_STATUS_LABELS.get(status, status)]
+    if trigger == "auto":
+        label_parts.append("🤖 auto")
+    else:
+        label_parts.append("👤 manuel")
+    label_parts.append(f"📅 {started}")
+    if duration_str:
+        label_parts.append(duration_str)
+    if show_match:
+        match_label = f"{run.get('home_team') or 'TBD'} vs {run.get('away_team') or 'TBD'}"
+        label_parts.insert(0, f"⚽ {match_label}")
+    if run.get("is_reference"):
+        label_parts.append("⭐ Référence")
+    if run.get("is_ignored"):
+        label_parts.append("🚫 Ignoré")
+    if run.get("note"):
+        label_parts.append(f"📝 {run['note'][:30]}")
+
+    with st.expander(" · ".join(label_parts), expanded=False):
+        detail = repository.get_analysis_run_detail(run_id)
+        if not detail:
+            st.warning("Détail introuvable.")
+            return
+
+        # Pipeline steps
+        steps = detail.get("steps", [])
+        if steps:
+            st.markdown("**Pipeline**")
+            for step in sorted(steps, key=lambda s: s.get("position", 0)):
+                _render_step_block(step)
+
+        # Artifacts
+        artifacts = detail.get("artifacts", [])
+        if artifacts:
+            st.markdown("**Artifacts**")
+            for artifact in artifacts:
+                _render_artifact_block(artifact)
+
+        # Annotations
+        st.markdown("**Annotations**")
+        ann_col1, ann_col2, ann_col3 = st.columns([3, 1, 1])
+        with ann_col1:
+            note_val = st.text_input("Note", value=run.get("note") or "", key=f"note-{run_id}")
+        with ann_col2:
+            is_ref = st.checkbox("⭐ Référence", value=bool(run.get("is_reference")), key=f"ref-{run_id}")
+        with ann_col3:
+            is_ign = st.checkbox("🚫 Ignorer", value=bool(run.get("is_ignored")), key=f"ign-{run_id}")
+        if st.button("💾 Sauvegarder", key=f"ann-save-{run_id}"):
+            repository.update_analysis_run_annotation(run_id, note=note_val, is_reference=is_ref, is_ignored=is_ign)
+            st.success("Annotations mises à jour.")
+            st.rerun()
+
+        # Retry actions
+        failed_steps = [s for s in steps if s.get("status") == "failed"]
+        if failed_steps:
+            st.markdown("**Relancer une étape**")
+            retry_step_label = st.selectbox(
+                "Étape à relancer",
+                [s["step_key"] for s in failed_steps],
+                format_func=lambda k: f"{_STEP_ICONS.get(k, '')} {k}",
+                key=f"retry-select-{run_id}",
+            )
+            if st.button(f"🔁 Relancer {retry_step_label}", key=f"retry-btn-{run_id}"):
+                match_id = run.get("match_id", "")
+                if match_id:
+                    _run_pipeline_with_live_progress(match_id, step_filter=retry_step_label, note=f"Retry de {retry_step_label}")
+                else:
+                    st.error("Match ID introuvable.")
+
+
+def _render_step_block(step: dict) -> None:
+    """Render a single pipeline step with logs and stats."""
+    step_key = step.get("step_key", "")
+    step_label = step.get("step_label", step_key)
+    status = step.get("status", "pending")
+    icon = _STATUS_ICONS.get(status, "❓")
+    summary = step.get("summary") or ""
+
+    started = (step.get("started_at") or "")[:16].replace("T", " ")
+    completed = (step.get("completed_at") or "")[:16].replace("T", " ")
+    duration_str = ""
+    if step.get("started_at") and step.get("completed_at"):
+        try:
+            from datetime import datetime as _dt
+            s = _dt.fromisoformat(step["started_at"].replace("Z", "+00:00"))
+            e = _dt.fromisoformat(step["completed_at"].replace("Z", "+00:00"))
+            duration_str = f" · ⏱ {int((e - s).total_seconds())}s"
+        except Exception:
+            pass
+
+    header = f"{icon} {step_label}"
+    if summary:
+        header += f" — {summary}"
+    if duration_str:
+        header += duration_str
+
+    with st.expander(header, expanded=(status == "failed")):
+        stats = step.get("stats") or {}
+        if stats:
+            st.json(stats)
+        logs = step.get("logs") or []
+        if logs:
+            st.markdown("**Logs**")
+            for log in logs:
+                level = log.get("level", "info")
+                msg = log.get("message", "")
+                ts = (log.get("created_at") or "")[:19].replace("T", " ")
+                if level == "error":
+                    st.error(f"[{ts}] {msg}")
+                elif level == "warning":
+                    st.warning(f"[{ts}] {msg}")
+                else:
+                    st.code(f"[{ts}] {msg}", language=None)
+
+
+def _render_artifact_block(artifact: dict) -> None:
+    """Render an artifact with a download button."""
+    import json as _json
+    label = artifact.get("label", artifact.get("artifact_type", "artifact"))
+    step_key = artifact.get("step_key", "")
+    step_icon = _STEP_ICONS.get(step_key, "📦")
+    payload = artifact.get("payload") or {}
+    payload_bytes = _json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+    filename = f"{artifact.get('artifact_type', 'artifact')}_{artifact.get('id', 'unknown')[:8]}.json"
+    art_col1, art_col2 = st.columns([4, 1])
+    with art_col1:
+        st.caption(f"{step_icon} {label}")
+    with art_col2:
+        st.download_button(
+            label="⬇️ Télécharger",
+            data=payload_bytes,
+            file_name=filename,
+            mime="application/json",
+            key=f"download-{artifact.get('id', label)}",
+        )
+
+
+def _render_run_row_compact(repository, run: dict, match_options: dict[str, str]) -> None:
+    """Compact run row for queue view."""
+    run_id = run["id"]
+    status = run.get("status", "unknown")
+    match_label = match_options.get(run.get("match_id", ""), "Match inconnu")
+    trigger = "🤖 auto" if run.get("trigger_type") == "auto" else "👤 manuel"
+    scheduled = (run.get("scheduled_for") or run.get("started_at") or "")[:16].replace("T", " ")
+
+    col_status, col_match, col_trigger, col_time, col_action = st.columns([1, 3, 1, 2, 1])
+    col_status.markdown(_RUN_STATUS_LABELS.get(status, status))
+    col_match.markdown(match_label)
+    col_trigger.markdown(trigger)
+    col_time.markdown(scheduled)
+    with col_action:
+        if status == "queued":
+            if st.button("▶ Lancer", key=f"queue-launch-{run_id}"):
+                _run_queued_pipeline_with_progress(run_id)
+
+
+def _render_run_comparison(repository, baseline_id: str, candidate_id: str) -> None:
+    """Side-by-side run comparison."""
+    comparison = repository.compare_analysis_runs(baseline_id, candidate_id)
+    baseline = comparison.get("baseline") or {}
+    candidate = comparison.get("candidate") or {}
+    changes = comparison.get("changes") or []
+
+    col_b, col_c = st.columns(2)
+    with col_b:
+        st.markdown(f"**Baseline** `{baseline_id[:16]}…`")
+        st.caption(f"Status: {baseline.get('status')} · {(baseline.get('started_at') or '')[:10]}")
+    with col_c:
+        st.markdown(f"**Candidat** `{candidate_id[:16]}…`")
+        st.caption(f"Status: {candidate.get('status')} · {(candidate.get('started_at') or '')[:10]}")
+
+    if not changes:
+        st.success("✅ Aucune différence détectée entre les deux runs.")
+    else:
+        st.warning(f"⚠️ {len(changes)} différence(s) détectée(s)")
+        for change in changes:
+            with st.expander(f"🔄 {change['key']}", expanded=True):
+                diff_col1, diff_col2 = st.columns(2)
+                with diff_col1:
+                    st.markdown("**Avant**")
+                    st.json(change.get("before") or {})
+                with diff_col2:
+                    st.markdown("**Après**")
+                    st.json(change.get("after") or {})
+
+
+def _run_pipeline_with_live_progress(
+    match_id: str,
+    *,
+    max_results: int = 5,
+    step_filter: str | None = None,
+    note: str | None = None,
+) -> None:
+    """Run the full pipeline with live per-step progress display."""
+    progress_placeholder = st.empty()
+    status_text = st.empty()
+
+    def _progress_callback(run_detail: dict) -> None:
+        steps = sorted(run_detail.get("steps", []), key=lambda s: s.get("position", 0))
+        with progress_placeholder.container():
+            for step in steps:
+                sk = step.get("step_key", "")
+                sl = step.get("step_label", sk)
+                st_val = step.get("status", "pending")
+                icon = _STATUS_ICONS.get(st_val, "❓")
+                summary = step.get("summary") or ""
+                st.markdown(f"{icon} **{sl}** {f'— {summary}' if summary else ''}")
+
+    with st.spinner("Pipeline en cours…"):
+        result = run_analysis_pipeline(
+            match_id,
+            max_results=max_results,
+            step_filter=step_filter,
+            note=note,
+            progress_callback=_progress_callback,
+        )
+
+    status_text.empty()
+    final_status = result.get("status", "unknown")
+    if final_status == "success":
+        st.success("✅ Pipeline terminé avec succès.")
+    else:
+        st.error("❌ Pipeline terminé avec des erreurs.")
+
+    st.rerun()
+
+
+def _run_queued_pipeline_with_progress(run_id: str) -> None:
+    """Run a queued analysis run with live progress."""
+    progress_placeholder = st.empty()
+
+    def _progress_callback(run_detail: dict) -> None:
+        steps = sorted(run_detail.get("steps", []), key=lambda s: s.get("position", 0))
+        with progress_placeholder.container():
+            for step in steps:
+                sk = step.get("step_key", "")
+                sl = step.get("step_label", sk)
+                st_val = step.get("status", "pending")
+                icon = _STATUS_ICONS.get(st_val, "❓")
+                summary = step.get("summary") or ""
+                st.markdown(f"{icon} **{sl}** {f'— {summary}' if summary else ''}")
+
+    with st.spinner("Lancement du run planifié…"):
+        result = run_queued_analysis(run_id, progress_callback=_progress_callback)
+
+    final_status = result.get("status", "unknown")
+    if final_status == "success":
+        st.success("✅ Run terminé avec succès.")
+    else:
+        st.error("❌ Run terminé avec des erreurs.")
+    st.rerun()
+
+
+def _run_match_pipeline(match_id: str) -> None:
+    _run_pipeline_with_live_progress(match_id)
 
 
 def _open_match_detail(match_id: str) -> None:
@@ -467,6 +989,20 @@ def _build_match_card_html(match: dict) -> str:
     date_label = _format_match_datetime(match.get("scheduled_at"))
     predicted_score = match.get("predicted_score") or "—"
     href = f"?match={html.escape(match['id'])}"
+
+    # Pipeline step badge
+    last_step = match.get("last_analysis_step")
+    last_status = match.get("last_analysis_status")
+    pipeline_html = ""
+    if last_step and last_status:
+        step_icon = _STEP_ICONS.get(last_step, "📌")
+        status_icon = _STATUS_ICONS.get(last_status, "")
+        pipeline_html = f"""
+        <div style="background:rgba(255,255,255,0.82);border-radius:14px;padding:8px 12px;grid-column:1/-1;">
+            <div style="font-size:0.8rem;color:#475569;">Dernière étape pipeline</div>
+            <div style="font-weight:700;color:#0F172A;">{step_icon} {html.escape(last_step)} {status_icon}</div>
+        </div>"""
+
     return f"""
     <a href="{href}" style="text-decoration:none;color:inherit;">
         <div style="
@@ -521,6 +1057,7 @@ def _build_match_card_html(match: dict) -> str:
                         <div style="font-size:0.8rem;color:#475569;">Analysées</div>
                         <div style="font-weight:700;color:#0F172A;">{int(match.get('analyzed_video_count') or 0)}</div>
                     </div>
+                    {pipeline_html}
                 </div>
             </div>
         </div>
