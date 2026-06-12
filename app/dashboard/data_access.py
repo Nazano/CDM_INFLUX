@@ -37,3 +37,42 @@ def analyze_match_videos(match_id: str, video_ids: list[str] | None = None) -> d
     pipeline = MatchIngestionPipeline()
     pipeline.database.initialize()
     return pipeline.analyze_match_videos(match_id, video_ids)
+
+
+def run_analysis_pipeline(
+    match_id: str,
+    *,
+    max_results: int = 5,
+    video_ids: list[str] | None = None,
+    step_filter: str | None = None,
+    progress_callback=None,
+    note: str | None = None,
+) -> dict:
+    from app.services.match_ingestion import MatchIngestionPipeline
+
+    pipeline = MatchIngestionPipeline()
+    pipeline.database.initialize()
+    return pipeline.run_match_pipeline(
+        match_id,
+        max_results_per_query=max_results,
+        video_ids=video_ids,
+        step_filter=step_filter,
+        progress_callback=progress_callback,
+        note=note,
+    )
+
+
+def schedule_analysis_run(match_id: str, scheduled_for, note: str | None = None) -> str:
+    from app.services.match_ingestion import MatchIngestionPipeline
+
+    pipeline = MatchIngestionPipeline()
+    pipeline.database.initialize()
+    return pipeline.schedule_match_analysis(match_id, scheduled_for=scheduled_for, note=note)
+
+
+def run_queued_analysis(run_id: str, progress_callback=None) -> dict:
+    from app.services.match_ingestion import MatchIngestionPipeline
+
+    pipeline = MatchIngestionPipeline()
+    pipeline.database.initialize()
+    return pipeline.run_queued_analysis(run_id, progress_callback=progress_callback)

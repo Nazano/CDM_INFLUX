@@ -16,6 +16,10 @@ PredictionItemType = Literal[
     "confidence_signal",
 ]
 TranscriptStatus = Literal["available", "unavailable", "simulated", "error"]
+AnalysisTriggerType = Literal["manual", "auto"]
+AnalysisRunStatus = Literal["queued", "running", "success", "failed", "cancelled"]
+AnalysisStepKey = Literal["search", "transcripts", "predictions", "finalize"]
+AnalysisStepStatus = Literal["pending", "running", "success", "failed", "skipped"]
 
 
 class Creator(BaseModel):
@@ -117,3 +121,50 @@ class ExtractedPredictions(BaseModel):
     items: list[PredictionItem] = Field(default_factory=list)
     key_quotes: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AnalysisRun(BaseModel):
+    id: str
+    match_id: str
+    trigger_type: AnalysisTriggerType = "manual"
+    status: AnalysisRunStatus = "queued"
+    started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    completed_at: datetime | None = None
+    scheduled_for: datetime | None = None
+    current_step_key: AnalysisStepKey | None = None
+    note: str | None = None
+    is_reference: bool = False
+    is_ignored: bool = False
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AnalysisRunStep(BaseModel):
+    id: str
+    run_id: str
+    step_key: AnalysisStepKey
+    step_label: str
+    position: int
+    status: AnalysisStepStatus = "pending"
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    summary: str | None = None
+    stats: dict[str, Any] = Field(default_factory=dict)
+
+
+class AnalysisStepLog(BaseModel):
+    id: str
+    step_id: str
+    level: str = "info"
+    message: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class AnalysisArtifact(BaseModel):
+    id: str
+    run_id: str
+    artifact_type: str
+    label: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    step_id: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

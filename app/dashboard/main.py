@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+from datetime import UTC, datetime
 
 import pandas as pd
 import plotly.express as px
@@ -8,9 +9,11 @@ import streamlit as st
 
 from app.dashboard.data_access import (
     analyze_match_videos,
-    fetch_videos_for_match,
     get_dashboard_repository,
     get_ranked_consensus,
+    run_analysis_pipeline,
+    run_queued_analysis,
+    schedule_analysis_run,
 )
 
 _CARD_STYLE = {
@@ -72,6 +75,7 @@ _FIFA_TO_ISO2 = {
 }
 
 _ADVANCED_PAGES = [
+    "Historique des analyses",
     "Explorateur de vidéos",
     "Détail d’une vidéo",
     "Comparateur de créateurs",

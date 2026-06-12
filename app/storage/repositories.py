@@ -4,13 +4,42 @@ from collections import defaultdict
 from datetime import UTC, datetime
 from typing import Any
 
-from app.models.entities import Channel, Creator, ExtractedPredictions, Match, Prediction, PredictionItem, Team, Transcript, Video
+from app.models.entities import (
+    AnalysisArtifact,
+    AnalysisRun,
+    AnalysisRunStep,
+    AnalysisStepLog,
+    Channel,
+    Creator,
+    ExtractedPredictions,
+    Match,
+    Prediction,
+    PredictionItem,
+    Team,
+    Transcript,
+    Video,
+)
 from app.storage.database import Database, dumps_json
 
 
 class Repository:
     def __init__(self, database: Database) -> None:
         self.database = database
+
+    @staticmethod
+    def _loads_json(payload: str | None, default: Any) -> Any:
+        import json
+
+        if not payload:
+            return default
+        try:
+            return json.loads(payload)
+        except Exception:
+            return default
+
+    @staticmethod
+    def _isoformat(value: datetime | None) -> str | None:
+        return value.isoformat() if value else None
 
     def upsert_creator(self, creator: Creator) -> None:
         with self.database.connection() as conn:
@@ -199,6 +228,7 @@ class Repository:
                 "channels": conn.execute("SELECT COUNT(*) FROM channels WHERE active = 1").fetchone()[0],
                 "videos": conn.execute("SELECT COUNT(*) FROM videos").fetchone()[0],
                 "predictions": conn.execute("SELECT COUNT(*) FROM prediction_items").fetchone()[0],
+                "analysis_runs": conn.execute("SELECT COUNT(*) FROM analysis_runs").fetchone()[0],
                 "languages": [dict(row) for row in conn.execute("SELECT language, COUNT(*) AS count FROM videos GROUP BY language ORDER BY count DESC")],
             }
         return metrics
@@ -404,6 +434,18 @@ class Repository:
                               COALESCE(atx.name, '') || ' vs ' || COALESCE(htx.name, '')
                           )
                         GROUP BY mvl.match_id, pi.value
+                    ),
+                    latest_analysis_run AS (
+                        SELECT ar.match_id,
+                               ar.status AS last_analysis_status,
+                               ar.current_step_key AS last_analysis_step,
+                               ar.completed_at AS last_analysis_completed_at,
+                               ROW_NUMBER() OVER (
+                                   PARTITION BY ar.match_id
+                                   ORDER BY COALESCE(ar.completed_at, ar.started_at) DESC, ar.created_at DESC
+                               ) AS run_rank
+                        FROM analysis_runs ar
+                        WHERE ar.is_ignored = 0
                     )
                     SELECT
                         m.id, m.tournament_stage, m.scheduled_at,
@@ -417,7 +459,10 @@ class Repository:
                         COUNT(DISTINCT lp.id) AS prediction_count,
                         sr.predicted_score,
                         COALESCE(sr.score_votes, 0) AS score_votes,
-                        COALESCE(sr.avg_score_confidence, 0) AS avg_score_confidence
+                        COALESCE(sr.avg_score_confidence, 0) AS avg_score_confidence,
+                        lar.last_analysis_status,
+                        lar.last_analysis_step,
+                        lar.last_analysis_completed_at
                     FROM matches m
                     LEFT JOIN teams ht ON ht.id = m.home_team_id
                     LEFT JOIN teams at ON at.id = m.away_team_id
@@ -425,10 +470,12 @@ class Repository:
                     LEFT JOIN transcripts t ON t.video_id = mvl.video_id
                     LEFT JOIN latest_predictions lp ON lp.video_id = mvl.video_id
                     LEFT JOIN score_rank sr ON sr.match_id = m.id AND sr.score_rank = 1
+                    LEFT JOIN latest_analysis_run lar ON lar.match_id = m.id AND lar.run_rank = 1
                     GROUP BY
                         m.id, m.tournament_stage, m.scheduled_at, m.metadata_json,
                         ht.name, ht.code, at.name, at.code,
-                        sr.predicted_score, sr.score_votes, sr.avg_score_confidence
+                        sr.predicted_score, sr.score_votes, sr.avg_score_confidence,
+                        lar.last_analysis_status, lar.last_analysis_step, lar.last_analysis_completed_at
                     ORDER BY m.scheduled_at
                     """,
                     (now_iso,),
@@ -488,6 +535,438 @@ class Repository:
                     (match_id,),
                 )
             ]
+
+    def create_analysis_run(self, run: AnalysisRun, steps: list[AnalysisRunStep]) -> None:
+        with self.database.connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO analysis_runs (
+                    id, match_id, trigger_type, status, started_at, completed_at,
+                    scheduled_for, current_step_key, note, is_reference, is_ignored,
+                    metadata_json, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """,
+                (
+                    run.id,
+                    run.match_id,
+                    run.trigger_type,
+                    run.status,
+                    self._isoformat(run.started_at),
+                    self._isoformat(run.completed_at),
+                    self._isoformat(run.scheduled_for),
+                    run.current_step_key,
+                    run.note,
+                    int(run.is_reference),
+                    int(run.is_ignored),
+                    dumps_json(run.metadata),
+                ),
+            )
+            for step in steps:
+                conn.execute(
+                    """
+                    INSERT INTO analysis_run_steps (
+                        id, run_id, step_key, step_label, position, status,
+                        started_at, completed_at, summary, stats_json, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    """,
+                    (
+                        step.id,
+                        step.run_id,
+                        step.step_key,
+                        step.step_label,
+                        step.position,
+                        step.status,
+                        self._isoformat(step.started_at),
+                        self._isoformat(step.completed_at),
+                        step.summary,
+                        dumps_json(step.stats),
+                    ),
+                )
+
+    def update_analysis_run(
+        self,
+        run_id: str,
+        *,
+        status: str | None = None,
+        current_step_key: str | None = None,
+        completed_at: datetime | None = None,
+        started_at: datetime | None = None,
+        note: str | None = None,
+        is_reference: bool | None = None,
+        is_ignored: bool | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        fields: list[str] = []
+        params: list[Any] = []
+        if status is not None:
+            fields.append("status = ?")
+            params.append(status)
+        if current_step_key is not None:
+            fields.append("current_step_key = ?")
+            params.append(current_step_key)
+        if completed_at is not None:
+            fields.append("completed_at = ?")
+            params.append(self._isoformat(completed_at))
+        if started_at is not None:
+            fields.append("started_at = ?")
+            params.append(self._isoformat(started_at))
+        if note is not None:
+            fields.append("note = ?")
+            params.append(note)
+        if is_reference is not None:
+            fields.append("is_reference = ?")
+            params.append(int(is_reference))
+        if is_ignored is not None:
+            fields.append("is_ignored = ?")
+            params.append(int(is_ignored))
+        if metadata is not None:
+            fields.append("metadata_json = ?")
+            params.append(dumps_json(metadata))
+        if not fields:
+            return
+        fields.append("updated_at = CURRENT_TIMESTAMP")
+        params.append(run_id)
+        with self.database.connection() as conn:
+            conn.execute(
+                f"UPDATE analysis_runs SET {', '.join(fields)} WHERE id = ?",
+                params,
+            )
+
+    def update_analysis_run_step(
+        self,
+        run_id: str,
+        step_key: str,
+        *,
+        status: str | None = None,
+        summary: str | None = None,
+        stats: dict[str, Any] | None = None,
+        started_at: datetime | None = None,
+        completed_at: datetime | None = None,
+    ) -> None:
+        fields: list[str] = []
+        params: list[Any] = []
+        if status is not None:
+            fields.append("status = ?")
+            params.append(status)
+        if summary is not None:
+            fields.append("summary = ?")
+            params.append(summary)
+        if stats is not None:
+            fields.append("stats_json = ?")
+            params.append(dumps_json(stats))
+        if started_at is not None:
+            fields.append("started_at = ?")
+            params.append(self._isoformat(started_at))
+        if completed_at is not None:
+            fields.append("completed_at = ?")
+            params.append(self._isoformat(completed_at))
+        if not fields:
+            return
+        fields.append("updated_at = CURRENT_TIMESTAMP")
+        params.extend([run_id, step_key])
+        with self.database.connection() as conn:
+            conn.execute(
+                f"UPDATE analysis_run_steps SET {', '.join(fields)} WHERE run_id = ? AND step_key = ?",
+                params,
+            )
+
+    def append_analysis_step_log(self, log: AnalysisStepLog) -> None:
+        with self.database.connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO analysis_step_logs (id, step_id, level, message, metadata_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    log.id,
+                    log.step_id,
+                    log.level,
+                    log.message,
+                    dumps_json(log.metadata),
+                    self._isoformat(log.created_at),
+                ),
+            )
+
+    def save_analysis_artifact(self, artifact: AnalysisArtifact) -> None:
+        with self.database.connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO analysis_artifacts (id, run_id, step_id, artifact_type, label, payload_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    artifact.id,
+                    artifact.run_id,
+                    artifact.step_id,
+                    artifact.artifact_type,
+                    artifact.label,
+                    dumps_json(artifact.payload),
+                    self._isoformat(artifact.created_at),
+                ),
+            )
+
+    def get_analysis_step_id(self, run_id: str, step_key: str) -> str | None:
+        with self.database.connection() as conn:
+            row = conn.execute(
+                "SELECT id FROM analysis_run_steps WHERE run_id = ? AND step_key = ?",
+                (run_id, step_key),
+            ).fetchone()
+        return row["id"] if row else None
+
+    def get_analysis_run_detail(self, run_id: str) -> dict[str, Any] | None:
+        with self.database.connection() as conn:
+            run_row = conn.execute(
+                """
+                SELECT ar.*,
+                       m.tournament_stage,
+                       ht.name AS home_team,
+                       at.name AS away_team
+                FROM analysis_runs ar
+                JOIN matches m ON m.id = ar.match_id
+                LEFT JOIN teams ht ON ht.id = m.home_team_id
+                LEFT JOIN teams at ON at.id = m.away_team_id
+                WHERE ar.id = ?
+                """,
+                (run_id,),
+            ).fetchone()
+            if not run_row:
+                return None
+            step_rows = [
+                dict(row)
+                for row in conn.execute(
+                    """
+                    SELECT *
+                    FROM analysis_run_steps
+                    WHERE run_id = ?
+                    ORDER BY position
+                    """,
+                    (run_id,),
+                )
+            ]
+            log_rows = [
+                dict(row)
+                for row in conn.execute(
+                    """
+                    SELECT l.*, s.step_key
+                    FROM analysis_step_logs l
+                    JOIN analysis_run_steps s ON s.id = l.step_id
+                    WHERE s.run_id = ?
+                    ORDER BY l.created_at
+                    """,
+                    (run_id,),
+                )
+            ]
+            artifact_rows = [
+                dict(row)
+                for row in conn.execute(
+                    """
+                    SELECT a.*, s.step_key
+                    FROM analysis_artifacts a
+                    LEFT JOIN analysis_run_steps s ON s.id = a.step_id
+                    WHERE a.run_id = ?
+                    ORDER BY a.created_at
+                    """,
+                    (run_id,),
+                )
+            ]
+
+        steps_by_id = {step["id"]: step for step in step_rows}
+        for step in steps_by_id.values():
+            step["stats"] = self._loads_json(step.pop("stats_json", None), {})
+            step["logs"] = []
+            step["artifacts"] = []
+        for log in log_rows:
+            log["metadata"] = self._loads_json(log.pop("metadata_json", None), {})
+            step = steps_by_id.get(log["step_id"])
+            if step:
+                step["logs"].append(log)
+        for artifact in artifact_rows:
+            artifact["payload"] = self._loads_json(artifact.pop("payload_json", None), {})
+            if artifact.get("step_id") and artifact["step_id"] in steps_by_id:
+                steps_by_id[artifact["step_id"]]["artifacts"].append(artifact)
+        run_payload = dict(run_row)
+        run_payload["metadata"] = self._loads_json(run_payload.pop("metadata_json", None), {})
+        run_payload["steps"] = list(steps_by_id.values())
+        run_payload["artifacts"] = [dict(artifact) for artifact in artifact_rows]
+        return run_payload
+
+    def list_analysis_runs(
+        self,
+        *,
+        match_id: str | None = None,
+        status: str | None = None,
+        trigger_type: str | None = None,
+        include_ignored: bool = True,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> list[dict[str, Any]]:
+        filters: list[str] = []
+        params: list[Any] = []
+        if match_id:
+            filters.append("ar.match_id = ?")
+            params.append(match_id)
+        if status:
+            filters.append("ar.status = ?")
+            params.append(status)
+        if trigger_type:
+            filters.append("ar.trigger_type = ?")
+            params.append(trigger_type)
+        if not include_ignored:
+            filters.append("ar.is_ignored = 0")
+        if start_date:
+            filters.append("DATE(COALESCE(ar.scheduled_for, ar.started_at)) >= DATE(?)")
+            params.append(start_date)
+        if end_date:
+            filters.append("DATE(COALESCE(ar.scheduled_for, ar.started_at)) <= DATE(?)")
+            params.append(end_date)
+        query = """
+            SELECT ar.*,
+                   m.tournament_stage,
+                   ht.name AS home_team,
+                   at.name AS away_team,
+                   (
+                       SELECT COUNT(*)
+                       FROM analysis_run_steps s
+                       WHERE s.run_id = ar.id AND s.status = 'failed'
+                   ) AS failed_steps,
+                   (
+                       SELECT COUNT(*)
+                       FROM analysis_run_steps s
+                       WHERE s.run_id = ar.id AND s.status = 'success'
+                   ) AS successful_steps
+            FROM analysis_runs ar
+            JOIN matches m ON m.id = ar.match_id
+            LEFT JOIN teams ht ON ht.id = m.home_team_id
+            LEFT JOIN teams at ON at.id = m.away_team_id
+        """
+        if filters:
+            query += " WHERE " + " AND ".join(filters)
+        query += " ORDER BY COALESCE(ar.scheduled_for, ar.started_at) DESC, ar.created_at DESC"
+        with self.database.connection() as conn:
+            rows = [dict(row) for row in conn.execute(query, params)]
+        for row in rows:
+            row["metadata"] = self._loads_json(row.pop("metadata_json", None), {})
+        return rows
+
+    def get_analysis_queue(self) -> list[dict[str, Any]]:
+        return self.list_analysis_runs(status="queued")
+
+    def get_analysis_health_metrics(self) -> dict[str, Any]:
+        with self.database.connection() as conn:
+            totals = conn.execute(
+                """
+                SELECT
+                    COUNT(*) AS total_runs,
+                    SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) AS successful_runs,
+                    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failed_runs,
+                    AVG(
+                        CASE
+                            WHEN completed_at IS NOT NULL
+                            THEN ROUND((julianday(completed_at) - julianday(started_at)) * 86400, 1)
+                        END
+                    ) AS avg_duration_seconds
+                FROM analysis_runs
+                WHERE is_ignored = 0
+                """
+            ).fetchone()
+            step_success = [
+                dict(row)
+                for row in conn.execute(
+                    """
+                    SELECT step_key,
+                           COUNT(*) AS total,
+                           SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) AS successful
+                    FROM analysis_run_steps
+                    GROUP BY step_key
+                    ORDER BY MIN(position)
+                    """
+                )
+            ]
+            transcript_statuses = [
+                dict(row)
+                for row in conn.execute(
+                    """
+                    SELECT status, COUNT(*) AS count
+                    FROM transcripts
+                    GROUP BY status
+                    ORDER BY count DESC
+                    """
+                )
+            ]
+            timeline = [
+                dict(row)
+                for row in conn.execute(
+                    """
+                    SELECT DATE(COALESCE(completed_at, started_at)) AS day,
+                           COUNT(*) AS runs,
+                           SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) AS successes
+                    FROM analysis_runs
+                    WHERE DATE(COALESCE(completed_at, started_at)) IS NOT NULL
+                    GROUP BY DATE(COALESCE(completed_at, started_at))
+                    ORDER BY day
+                    """
+                )
+            ]
+        unavailable_count = next((row["count"] for row in transcript_statuses if row["status"] == "unavailable"), 0)
+        total_transcripts = sum(row["count"] for row in transcript_statuses)
+        return {
+            "total_runs": totals["total_runs"] or 0,
+            "successful_runs": totals["successful_runs"] or 0,
+            "failed_runs": totals["failed_runs"] or 0,
+            "avg_duration_seconds": round(totals["avg_duration_seconds"] or 0, 1),
+            "step_success": [
+                {
+                    **row,
+                    "success_rate": round(((row["successful"] or 0) / row["total"]) * 100, 1) if row["total"] else 0.0,
+                }
+                for row in step_success
+            ],
+            "transcript_unavailable_rate": round((unavailable_count / total_transcripts) * 100, 1) if total_transcripts else 0.0,
+            "timeline": timeline,
+        }
+
+    def compare_analysis_runs(self, baseline_run_id: str, candidate_run_id: str) -> dict[str, Any]:
+        baseline = self.get_analysis_run_detail(baseline_run_id)
+        candidate = self.get_analysis_run_detail(candidate_run_id)
+        if not baseline or not candidate:
+            return {"baseline": baseline, "candidate": candidate, "changes": []}
+
+        def _index_artifacts(run_payload: dict[str, Any], artifact_type: str) -> dict[str, dict[str, Any]]:
+            payload: dict[str, dict[str, Any]] = {}
+            for artifact in run_payload.get("artifacts", []):
+                if artifact["artifact_type"] != artifact_type:
+                    continue
+                items = artifact["payload"].get("items", [])
+                for item in items:
+                    payload[item.get("key") or item.get("video_id") or item.get("value") or artifact["label"]] = item
+            return payload
+
+        baseline_predictions = _index_artifacts(baseline, "predictions")
+        candidate_predictions = _index_artifacts(candidate, "predictions")
+        all_keys = sorted(set(baseline_predictions) | set(candidate_predictions))
+        changes = []
+        for key in all_keys:
+            before = baseline_predictions.get(key)
+            after = candidate_predictions.get(key)
+            if before == after:
+                continue
+            changes.append({"key": key, "before": before, "after": after})
+        return {"baseline": baseline, "candidate": candidate, "changes": changes}
+
+    def update_analysis_run_annotation(
+        self,
+        run_id: str,
+        *,
+        note: str | None,
+        is_reference: bool,
+        is_ignored: bool,
+    ) -> None:
+        self.update_analysis_run(
+            run_id,
+            note=note or "",
+            is_reference=is_reference,
+            is_ignored=is_ignored,
+        )
 
     def has_matches(self) -> bool:
         with self.database.connection() as conn:

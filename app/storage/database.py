@@ -135,6 +135,67 @@ SCHEMA_STATEMENTS = [
     """,
     "CREATE INDEX IF NOT EXISTS idx_match_video_links_match ON match_video_links(match_id)",
     "CREATE INDEX IF NOT EXISTS idx_match_video_links_video ON match_video_links(video_id)",
+    """
+    CREATE TABLE IF NOT EXISTS analysis_runs (
+        id TEXT PRIMARY KEY,
+        match_id TEXT NOT NULL REFERENCES matches(id),
+        trigger_type TEXT NOT NULL,
+        status TEXT NOT NULL,
+        started_at TEXT NOT NULL,
+        completed_at TEXT,
+        scheduled_for TEXT,
+        current_step_key TEXT,
+        note TEXT,
+        is_reference INTEGER NOT NULL DEFAULT 0,
+        is_ignored INTEGER NOT NULL DEFAULT 0,
+        metadata_json TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS analysis_run_steps (
+        id TEXT PRIMARY KEY,
+        run_id TEXT NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
+        step_key TEXT NOT NULL,
+        step_label TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        started_at TEXT,
+        completed_at TEXT,
+        summary TEXT,
+        stats_json TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(run_id, step_key)
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS analysis_step_logs (
+        id TEXT PRIMARY KEY,
+        step_id TEXT NOT NULL REFERENCES analysis_run_steps(id) ON DELETE CASCADE,
+        level TEXT NOT NULL,
+        message TEXT NOT NULL,
+        metadata_json TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS analysis_artifacts (
+        id TEXT PRIMARY KEY,
+        run_id TEXT NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
+        step_id TEXT REFERENCES analysis_run_steps(id) ON DELETE CASCADE,
+        artifact_type TEXT NOT NULL,
+        label TEXT NOT NULL,
+        payload_json TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_analysis_runs_match ON analysis_runs(match_id, started_at DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_analysis_runs_status ON analysis_runs(status, scheduled_for)",
+    "CREATE INDEX IF NOT EXISTS idx_analysis_run_steps_run ON analysis_run_steps(run_id, position)",
+    "CREATE INDEX IF NOT EXISTS idx_analysis_step_logs_step ON analysis_step_logs(step_id, created_at)",
+    "CREATE INDEX IF NOT EXISTS idx_analysis_artifacts_run ON analysis_artifacts(run_id, created_at)",
 ]
 
 
