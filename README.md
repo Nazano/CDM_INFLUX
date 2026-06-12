@@ -80,6 +80,10 @@ pytest
 - Channel list: `config/channels.yml`
 - Demo dataset: `data/demo_videos.json`
 - Database path can be overridden with `CDM_INFLUX_DB_PATH`
+- YouTube API key: set `YOUTUBE_API_KEY` in your shell or in a `.env` file at the repository root
+- Optional YouTube override: set `youtube_channel_id` per channel in `config/channels.yml` to skip handle resolution
+- Optional YouTube result limit: `YOUTUBE_MAX_RESULTS` (defaults to `10`)
+- If `YOUTUBE_API_KEY` is not set, ingestion keeps using the bundled demo dataset
 
 ## Notes for future evolution
 

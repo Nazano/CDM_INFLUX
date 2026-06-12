@@ -3,13 +3,12 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from pathlib import Path
 from typing import Any
 
 from app.config import AppConfig, Settings, get_settings, load_app_config
 from app.extraction.predictions import extract_predictions
 from app.extraction.transcripts import extract_transcript
-from app.ingestion.youtube import DemoYouTubeSource, build_channel, build_creator, build_video, is_world_cup_video
+from app.ingestion.youtube import build_channel, build_creator, build_video, build_youtube_source, is_world_cup_video
 from app.models.entities import Prediction
 from app.storage.database import Database
 from app.storage.repositories import Repository
@@ -22,7 +21,7 @@ class DemoPipeline:
         self.settings = settings or get_settings()
         self.database = Database(self.settings.db_path)
         self.repository = Repository(self.database)
-        self.source = DemoYouTubeSource(self.settings.demo_data_path)
+        self.source = build_youtube_source(self.settings)
 
     def initialize(self) -> None:
         self.database.initialize()
