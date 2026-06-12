@@ -73,16 +73,31 @@ def render_video_explorer(repository) -> None:
         team_filter=team or None,
     )
     df = pd.DataFrame(rows)
+    if not df.empty and "processed_at" in df.columns:
+        df["processed_at"] = pd.to_datetime(df["processed_at"], errors="coerce")
+        df["Analysé le"] = df["processed_at"].dt.strftime("%d/%m/%Y %H:%M")
     st.dataframe(df, use_container_width=True)
 
 
 def render_video_detail(repository) -> None:
     st.title("Détail d’une vidéo")
     videos = repository.list_videos()
-    video_map = {f"{row['title']} ({row['channel_name']})": row["id"] for row in videos}
-    if not video_map:
+    if not videos:
         st.info("Aucune vidéo disponible.")
         return
+
+    def _video_label(row: dict) -> str:
+        label = f"{row['title']} ({row['channel_name']})"
+        if row.get("processed_at"):
+            try:
+                import datetime as _dt
+                ts = _dt.datetime.fromisoformat(str(row["processed_at"]))
+                label += f" — analysé le {ts.strftime('%d/%m/%Y %H:%M')}"
+            except Exception:
+                pass
+        return label
+
+    video_map = {_video_label(row): row["id"] for row in videos}
     selected_label = st.selectbox("Vidéo", list(video_map.keys()))
     payload = repository.get_video_detail(video_map[selected_label])
     if not payload:
@@ -261,6 +276,8 @@ def render_match_videos(repository) -> None:
     videos_df = pd.DataFrame(videos)
     videos_df["publish_date"] = pd.to_datetime(videos_df["publish_date"], errors="coerce")
     videos_df["date"] = videos_df["publish_date"].dt.strftime("%d/%m/%Y")
+    videos_df["processed_at"] = pd.to_datetime(videos_df["processed_at"], errors="coerce")
+    videos_df["analysed_le"] = videos_df["processed_at"].dt.strftime("%d/%m/%Y %H:%M")
     videos_df["pertinence"] = (videos_df["relevance_score"] * 100).round(0).astype(int).astype(str) + "%"
     videos_df["lien"] = videos_df["video_url"]
 
@@ -274,13 +291,14 @@ def render_match_videos(repository) -> None:
 
     videos_df["pertinence_label"] = videos_df["relevance_score"].apply(relevance_label)
 
-    display_cols = ["title", "channel_name", "language", "date", "pertinence_label", "transcript_status", "video_url"]
+    display_cols = ["title", "channel_name", "language", "date", "analysed_le", "pertinence_label", "transcript_status", "video_url"]
     st.dataframe(
         videos_df[display_cols].rename(columns={
             "title": "Titre",
             "channel_name": "Chaîne",
             "language": "Langue",
             "date": "Publication",
+            "analysed_le": "Analysé le",
             "pertinence_label": "Pertinence",
             "transcript_status": "Transcript",
             "video_url": "URL",

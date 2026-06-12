@@ -214,7 +214,11 @@ class Repository:
         params: list[Any] = []
         query = """
             SELECT v.id, v.video_id, v.title, v.language, v.publish_date, v.video_url,
-                   c.name AS channel_name, p.summary AS prediction_summary
+                   c.name AS channel_name, p.summary AS prediction_summary,
+                   COALESCE(
+                       (SELECT extracted_at FROM transcripts WHERE video_id = v.id ORDER BY extracted_at DESC LIMIT 1),
+                       v.updated_at
+                   ) AS processed_at
             FROM videos v
             JOIN channels c ON c.id = v.channel_id
             LEFT JOIN predictions p ON p.video_id = v.id
@@ -231,7 +235,7 @@ class Repository:
             params.append(team_filter)
         if filters:
             query += " WHERE " + " AND ".join(filters)
-        query += " GROUP BY v.id ORDER BY v.publish_date DESC"
+        query += " GROUP BY v.id ORDER BY processed_at DESC"
         with self.database.connection() as conn:
             return [dict(row) for row in conn.execute(query, params)]
 
@@ -391,14 +395,18 @@ class Repository:
                     SELECT v.id, v.video_id, v.title, v.language, v.publish_date, v.video_url,
                            c.name AS channel_name, mvl.relevance_score,
                            p.summary AS prediction_summary,
-                           t.status AS transcript_status
+                           t.status AS transcript_status,
+                           COALESCE(
+                               (SELECT extracted_at FROM transcripts WHERE video_id = v.id ORDER BY extracted_at DESC LIMIT 1),
+                               v.updated_at
+                           ) AS processed_at
                     FROM match_video_links mvl
                     JOIN videos v ON v.id = mvl.video_id
                     JOIN channels c ON c.id = v.channel_id
                     LEFT JOIN predictions p ON p.video_id = v.id
                     LEFT JOIN transcripts t ON t.video_id = v.id
                     WHERE mvl.match_id = ?
-                    ORDER BY mvl.relevance_score DESC, v.publish_date DESC
+                    ORDER BY processed_at DESC, mvl.relevance_score DESC
                     """,
                     (match_id,),
                 )
