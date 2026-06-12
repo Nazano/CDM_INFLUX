@@ -10,23 +10,14 @@ def test_extract_transcript_uses_hint_when_available() -> None:
 
 
 def test_extract_transcript_fetches_youtube_transcript(monkeypatch) -> None:
-    class StubClient:
-        def list(self, video_id: str):
-            assert video_id == "video-123"
-            return self
-
-        def find_transcript(self, languages: list[str]):
-            assert languages[0] == "fr"
-            return self
-
-        def fetch(self):
-            return [
-                type("Snippet", (), {"start": 0.0, "duration": 2.0, "text": "Bonjour"})(),
-                type("Snippet", (), {"start": 2.0, "duration": 2.0, "text": "le monde"})(),
-            ]
-
-    monkeypatch.setattr("app.extraction.transcripts._build_youtube_transcript_client", lambda: StubClient())
-    monkeypatch.setattr("app.extraction.transcripts._fetch_youtube_transcript", lambda video_id, language: {"language": "fr", "segments": extract_transcript("demo", transcript_hint="Bonjour le monde", language="fr").segments, "source": "youtube"})
+    monkeypatch.setattr(
+        "app.extraction.transcripts._fetch_youtube_transcript",
+        lambda video_id, language: {
+            "language": "fr",
+            "segments": extract_transcript("demo", transcript_hint="Bonjour le monde", language="fr").segments,
+            "source": "youtube",
+        },
+    )
 
     transcript = extract_transcript("video-123", language="fr")
 
