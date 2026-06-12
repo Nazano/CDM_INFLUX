@@ -11,7 +11,7 @@ import json
 import logging
 import urllib.error
 import urllib.request
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -96,7 +96,7 @@ def load_cached_meta(cache_path: Path = DEFAULT_CACHE_PATH) -> dict[str, Any] | 
         raw = cache_path.read_text(encoding="utf-8")
         data = json.loads(raw)
         return data if isinstance(data, dict) else None
-    except Exception as exc:  # noqa: BLE001
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
         logger.warning("Cannot read cached meta from %s: %s", cache_path, exc)
         return None
 
