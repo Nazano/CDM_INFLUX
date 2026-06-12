@@ -16,6 +16,8 @@ def extract_transcript(
     transcript_hint: str | None = None,
     language: str | None = None,
     transcript_segments: list[dict[str, Any]] | None = None,
+    *,
+    enabled: bool = True,
 ) -> Transcript:
     if transcript_hint:
         segments = _coerce_segments(transcript_segments or _simulate_segments(transcript_hint))
@@ -28,6 +30,19 @@ def extract_transcript(
             segments=segments,
             extracted_at=datetime.now(UTC),
             source="demo",
+        )
+
+    if not enabled:
+        logger.debug("Live transcript fetch disabled for %s", video_id)
+        return Transcript(
+            id=f"transcript-{video_id}",
+            video_id=video_id,
+            status="unavailable",
+            text=None,
+            language=language,
+            segments=[],
+            extracted_at=datetime.now(UTC),
+            source="youtube",
         )
 
     try:

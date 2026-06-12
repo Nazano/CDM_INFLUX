@@ -84,6 +84,7 @@ pytest
 - Optional YouTube override: set `youtube_channel_id` per channel in `config/channels.yml` to skip handle resolution
 - Optional YouTube result limit: `YOUTUBE_MAX_RESULTS` (defaults to `10`)
 - If `YOUTUBE_API_KEY` is not set, ingestion keeps using the bundled demo dataset
+- Live transcript fetching via `youtube-transcript-api` is **disabled by default** (to avoid IP-blocking errors from cloud environments). Set `YOUTUBE_TRANSCRIPTS_ENABLED=true` in your `.env` or shell to enable it.
 
 ## Notes for future evolution
 

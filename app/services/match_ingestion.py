@@ -196,6 +196,8 @@ def extract_transcripts_for_match(
     match_id: str,
     repository: Repository,
     video_ids: list[str] | None = None,
+    *,
+    transcripts_enabled: bool = True,
 ) -> dict[str, Any]:
     """
     Download transcripts and extract predictions for videos linked to a match.
@@ -217,7 +219,7 @@ def extract_transcripts_for_match(
         db_video_id = row["id"]
         language = row.get("language", "fr")
 
-        transcript = extract_transcript(vid_id, language=language)
+        transcript = extract_transcript(vid_id, language=language, enabled=transcripts_enabled)
         transcript.video_id = db_video_id
         transcript.id = f"transcript-{vid_id}"
         repository.save_transcript(transcript)
@@ -303,8 +305,10 @@ def analyze_videos_for_match(
     match_id: str,
     repository: Repository,
     video_ids: list[str] | None = None,
+    *,
+    transcripts_enabled: bool = True,
 ) -> dict[str, Any]:
-    transcripts = extract_transcripts_for_match(match_id, repository, video_ids)
+    transcripts = extract_transcripts_for_match(match_id, repository, video_ids, transcripts_enabled=transcripts_enabled)
     predictions = extract_predictions_for_match(match_id, repository, video_ids)
     merged_predictions = {item["video_id"]: item for item in predictions["videos"]}
     merged_videos = []
@@ -411,7 +415,7 @@ class MatchIngestionPipeline:
         return fetch_and_store_videos_for_match(match, self.repository, self.source, max_results_per_query)["stored"]
 
     def analyze_match_videos(self, match_id: str, video_ids: list[str] | None = None) -> dict[str, int]:
-        result = analyze_videos_for_match(match_id, self.repository, video_ids)
+        result = analyze_videos_for_match(match_id, self.repository, video_ids, transcripts_enabled=self.settings.youtube_transcripts_enabled)
         return {"transcripts": result["transcripts"], "predictions": result["predictions"]}
 
     def schedule_match_analysis(
@@ -547,7 +551,7 @@ class MatchIngestionPipeline:
                         completed_at=datetime.now(UTC),
                     )
                 elif step_key == "transcripts":
-                    transcript_result = extract_transcripts_for_match(match_id, self.repository, video_ids)
+                    transcript_result = extract_transcripts_for_match(match_id, self.repository, video_ids, transcripts_enabled=self.settings.youtube_transcripts_enabled)
                     result["analysis"] = {**(result["analysis"] or {}), **transcript_result}
                     self._log_transcript_step(run_id, transcript_result)
                     self.repository.save_analysis_artifact(
