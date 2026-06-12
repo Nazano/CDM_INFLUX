@@ -61,6 +61,14 @@ This command:
 - extracts YouTube transcripts when available, otherwise uses demo transcripts or marks them unavailable
 - stores the results for the dashboard
 
+## Build local RAG index
+
+```bash
+python -m app.cli index-rag
+```
+
+This command indexes already stored transcripts into a persistent local ChromaDB collection (`data/chroma` by default).
+
 ## Launch the dashboard
 
 ```bash
@@ -85,6 +93,11 @@ pytest
 - Optional YouTube result limit: `YOUTUBE_MAX_RESULTS` (defaults to `10`)
 - If `YOUTUBE_API_KEY` is not set, ingestion keeps using the bundled demo dataset
 - Live transcript fetching via `youtube-transcript-api` is **disabled by default** (to avoid IP-blocking errors from cloud environments). Set `YOUTUBE_TRANSCRIPTS_ENABLED=true` in your `.env` or shell to enable it.
+- Local RAG switch: `RAG_ENABLED=true`
+- Ollama endpoint: `OLLAMA_BASE_URL` (defaults to `http://localhost:11434`)
+- Ollama embedding model: `OLLAMA_EMBED_MODEL` (defaults to `nomic-embed-text`)
+- Ollama chat model: `OLLAMA_CHAT_MODEL` (defaults to `llama3`)
+- Chroma persistence path: `CDM_INFLUX_CHROMA_PATH` (defaults to `data/chroma`)
 
 ## Notes for future evolution
 

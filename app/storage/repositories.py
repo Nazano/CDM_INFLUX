@@ -312,6 +312,38 @@ class Repository:
                 "prediction_items": items,
             }
 
+    def list_available_transcripts(self) -> list[dict[str, Any]]:
+        with self.database.connection() as conn:
+            return [
+                dict(row)
+                for row in conn.execute(
+                    """
+                    WITH latest_transcripts AS (
+                        SELECT t1.*
+                        FROM transcripts t1
+                        JOIN (
+                            SELECT video_id, MAX(updated_at) AS updated_at
+                            FROM transcripts
+                            GROUP BY video_id
+                        ) latest ON latest.video_id = t1.video_id AND latest.updated_at = t1.updated_at
+                    )
+                    SELECT
+                        lt.id,
+                        v.id AS video_db_id,
+                        v.video_id,
+                        v.title AS video_title,
+                        lt.text,
+                        lt.language,
+                        lt.status,
+                        lt.source
+                    FROM latest_transcripts lt
+                    JOIN videos v ON v.id = lt.video_id
+                    WHERE lt.status = 'available' AND COALESCE(lt.text, '') != ''
+                    ORDER BY lt.updated_at DESC
+                    """
+                )
+            ]
+
     def get_creator_comparison(self) -> list[dict[str, Any]]:
         with self.database.connection() as conn:
             return [

@@ -12,6 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG_PATH = REPO_ROOT / "config" / "channels.yml"
 DEFAULT_DATA_PATH = REPO_ROOT / "data" / "demo_videos.json"
 DEFAULT_DB_PATH = REPO_ROOT / "data" / "cdm_influx.db"
+DEFAULT_CHROMA_PATH = REPO_ROOT / "data" / "chroma"
 DEFAULT_ENV_PATH = REPO_ROOT / ".env"
 
 
@@ -34,11 +35,16 @@ class Settings(BaseModel):
     config_path: Path = DEFAULT_CONFIG_PATH
     demo_data_path: Path = DEFAULT_DATA_PATH
     db_path: Path = Field(default_factory=lambda: Path(os.getenv("CDM_INFLUX_DB_PATH", DEFAULT_DB_PATH)))
+    chroma_path: Path = Field(default_factory=lambda: Path(os.getenv("CDM_INFLUX_CHROMA_PATH", DEFAULT_CHROMA_PATH)))
     youtube_api_key: str | None = Field(default_factory=lambda: os.getenv("YOUTUBE_API_KEY"))
     youtube_max_results: int = Field(default_factory=lambda: int(os.getenv("YOUTUBE_MAX_RESULTS", "10")))
     youtube_transcripts_enabled: bool = Field(
         default_factory=lambda: os.getenv("YOUTUBE_TRANSCRIPTS_ENABLED", "false").lower() in {"1", "true", "yes"}
     )
+    rag_enabled: bool = Field(default_factory=lambda: os.getenv("RAG_ENABLED", "false").lower() in {"1", "true", "yes"})
+    ollama_base_url: str = Field(default_factory=lambda: os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
+    ollama_embed_model: str = Field(default_factory=lambda: os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text"))
+    ollama_chat_model: str = Field(default_factory=lambda: os.getenv("OLLAMA_CHAT_MODEL", "llama3"))
 
 
 def load_env_file(path: Path = DEFAULT_ENV_PATH) -> None:

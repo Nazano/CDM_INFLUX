@@ -8,6 +8,7 @@ import plotly.express as px
 import streamlit as st
 
 from app.dashboard.data_access import (
+    ask_rag,
     analyze_match_videos,
     fetch_videos_for_match,
     get_dashboard_repository,
@@ -76,6 +77,7 @@ _FIFA_TO_ISO2 = {
 }
 
 _ADVANCED_PAGES = [
+    "🤖 Assistant RAG",
     "Historique des analyses",
     "Santé des analyses",
     "Queue",
@@ -127,6 +129,8 @@ def run() -> None:
         render_landing_page(repository)
     elif page == "Détail match":
         render_match_detail(repository, selected_match_id)
+    elif page == "🤖 Assistant RAG":
+        render_rag_assistant(repository)
     elif page == "Historique des analyses":
         render_analysis_history(repository)
     elif page == "Santé des analyses":
@@ -515,6 +519,40 @@ def render_match_analyses_tab(repository, match_id: str) -> None:
 
     for run in runs:
         _render_run_row(repository, run, show_match=False)
+
+
+def render_rag_assistant(repository) -> None:
+    st.title("🤖 Assistant RAG")
+    st.caption("Interrogez la base de connaissances locale indexée depuis les transcripts.")
+    matches = repository.get_matches()
+    match_options = {"Tous les matchs": None}
+    for match in matches:
+        label = f"{match.get('home_team') or 'TBD'} vs {match.get('away_team') or 'TBD'} ({match['tournament_stage']})"
+        match_options[label] = match["id"]
+    selected_label = st.selectbox("Filtrer par match (optionnel)", list(match_options.keys()))
+    question = st.text_area("Pose une question sur les pronostics", height=100)
+    if st.button("Interroger la base", type="primary"):
+        if not question.strip():
+            st.warning("Veuillez saisir une question.")
+            return
+        with st.spinner("Recherche des chunks et génération en cours…"):
+            payload = ask_rag(question.strip(), match_id=match_options[selected_label])
+        if not payload["enabled"]:
+            st.info(payload["reason"] or "RAG indisponible.")
+            return
+        st.subheader("Réponse")
+        st.write(payload["answer"] or "Aucune réponse générée.")
+        st.subheader("Sources")
+        sources = payload.get("sources") or []
+        if not sources:
+            st.caption("Aucune source trouvée.")
+            return
+        for index, source in enumerate(sources, start=1):
+            metadata = source.get("metadata") or {}
+            title = metadata.get("video_title") or metadata.get("video_id") or "source inconnue"
+            distance = source.get("distance")
+            st.markdown(f"**{index}. {title}** · distance={distance if distance is not None else 'n/a'}")
+            st.caption((source.get("document") or "")[:500])
 
 
 def render_analysis_history(repository) -> None:

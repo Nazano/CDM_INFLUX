@@ -11,6 +11,8 @@ from app.extraction.transcripts import extract_transcript
 from app.ingestion.schedule import build_matches, build_teams, build_youtube_search_queries, load_schedule
 from app.ingestion.youtube import build_youtube_source
 from app.models.entities import AnalysisArtifact, AnalysisRun, AnalysisRunStep, AnalysisStepLog, Channel, Creator, Match, Prediction, Video
+from app.rag.chroma_store import ChromaStore
+from app.rag.indexer import index_transcript_for_video
 from app.storage.database import Database
 from app.storage.repositories import Repository
 
@@ -198,6 +200,7 @@ def extract_transcripts_for_match(
     video_ids: list[str] | None = None,
     *,
     transcripts_enabled: bool = True,
+    settings: Settings | None = None,
 ) -> dict[str, Any]:
     """
     Download transcripts and extract predictions for videos linked to a match.
@@ -212,6 +215,16 @@ def extract_transcripts_for_match(
     transcript_count = 0
     unavailable_count = 0
     error_count = 0
+    rag_store = None
+    if settings and settings.rag_enabled:
+        try:
+            rag_store = ChromaStore(
+                settings.chroma_path,
+                ollama_base_url=settings.ollama_base_url,
+                embed_model=settings.ollama_embed_model,
+            )
+        except Exception as exc:
+            logger.warning("RAG disabled for transcript extraction: %s", exc)
     videos_summary: list[dict[str, Any]] = []
 
     for row in videos:
@@ -223,6 +236,16 @@ def extract_transcripts_for_match(
         transcript.video_id = db_video_id
         transcript.id = f"transcript-{vid_id}"
         repository.save_transcript(transcript)
+        if rag_store and transcript.status == "available" and transcript.text:
+            try:
+                index_transcript_for_video(
+                    db_video_id,
+                    repository,
+                    rag_store,
+                    metadata={"match_id": match_id},
+                )
+            except Exception as exc:
+                logger.warning("RAG indexing skipped for %s: %s", vid_id, exc)
         transcript_count += 1
         if transcript.status == "unavailable":
             unavailable_count += 1
@@ -307,8 +330,15 @@ def analyze_videos_for_match(
     video_ids: list[str] | None = None,
     *,
     transcripts_enabled: bool = True,
+    settings: Settings | None = None,
 ) -> dict[str, Any]:
-    transcripts = extract_transcripts_for_match(match_id, repository, video_ids, transcripts_enabled=transcripts_enabled)
+    transcripts = extract_transcripts_for_match(
+        match_id,
+        repository,
+        video_ids,
+        transcripts_enabled=transcripts_enabled,
+        settings=settings,
+    )
     predictions = extract_predictions_for_match(match_id, repository, video_ids)
     merged_predictions = {item["video_id"]: item for item in predictions["videos"]}
     merged_videos = []
@@ -415,7 +445,13 @@ class MatchIngestionPipeline:
         return fetch_and_store_videos_for_match(match, self.repository, self.source, max_results_per_query)["stored"]
 
     def analyze_match_videos(self, match_id: str, video_ids: list[str] | None = None) -> dict[str, int]:
-        result = analyze_videos_for_match(match_id, self.repository, video_ids, transcripts_enabled=self.settings.youtube_transcripts_enabled)
+        result = analyze_videos_for_match(
+            match_id,
+            self.repository,
+            video_ids,
+            transcripts_enabled=self.settings.youtube_transcripts_enabled,
+            settings=self.settings,
+        )
         return {"transcripts": result["transcripts"], "predictions": result["predictions"]}
 
     def schedule_match_analysis(
@@ -551,7 +587,13 @@ class MatchIngestionPipeline:
                         completed_at=datetime.now(UTC),
                     )
                 elif step_key == "transcripts":
-                    transcript_result = extract_transcripts_for_match(match_id, self.repository, video_ids, transcripts_enabled=self.settings.youtube_transcripts_enabled)
+                    transcript_result = extract_transcripts_for_match(
+                        match_id,
+                        self.repository,
+                        video_ids,
+                        transcripts_enabled=self.settings.youtube_transcripts_enabled,
+                        settings=self.settings,
+                    )
                     result["analysis"] = {**(result["analysis"] or {}), **transcript_result}
                     self._log_transcript_step(run_id, transcript_result)
                     self.repository.save_analysis_artifact(

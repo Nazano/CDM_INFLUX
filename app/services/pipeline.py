@@ -10,6 +10,8 @@ from app.extraction.predictions import extract_predictions
 from app.extraction.transcripts import extract_transcript
 from app.ingestion.youtube import build_channel, build_creator, build_video, build_youtube_source, is_world_cup_video
 from app.models.entities import Prediction
+from app.rag.chroma_store import ChromaStore
+from app.rag.indexer import index_transcript_for_video
 from app.storage.database import Database
 from app.storage.repositories import Repository
 
@@ -35,6 +37,16 @@ class DemoPipeline:
         self.initialize()
         ingested_videos = 0
         extracted_predictions = 0
+        rag_store = None
+        if self.settings.rag_enabled:
+            try:
+                rag_store = ChromaStore(
+                    self.settings.chroma_path,
+                    ollama_base_url=self.settings.ollama_base_url,
+                    embed_model=self.settings.ollama_embed_model,
+                )
+            except Exception as exc:
+                logger.warning("RAG disabled for this run: %s", exc)
         demo_payload = self.load_demo_payload()
         transcript_map = {item["video_id"]: item for item in demo_payload.get("videos", [])}
 
@@ -61,6 +73,11 @@ class DemoPipeline:
                 transcript.video_id = video.id
                 transcript.id = f"transcript-{video.video_id}"
                 self.repository.save_transcript(transcript)
+                if rag_store and transcript.status == "available" and transcript.text:
+                    try:
+                        index_transcript_for_video(video.id, self.repository, rag_store)
+                    except Exception as exc:
+                        logger.warning("RAG indexing skipped for %s: %s", video.video_id, exc)
 
                 extracted = extract_predictions(transcript.text or "")
                 prediction = Prediction(
