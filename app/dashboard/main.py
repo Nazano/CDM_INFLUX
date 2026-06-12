@@ -870,6 +870,7 @@ def _render_run_row_compact(repository, run: dict, match_options: dict[str, str]
                 _run_queued_pipeline_with_progress(run_id)
         if st.button("🔎", key=f"queue-detail-{run_id}", help="Afficher les détails du run"):
             st.session_state["queue_selected_run_id"] = run_id
+            st.rerun()
 
 
 def _render_run_comparison(repository, baseline_id: str, candidate_id: str) -> None:
