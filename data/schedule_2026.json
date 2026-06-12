@@ -1,0 +1,1115 @@
+{
+  "tournament": "FIFA Coupe du Monde 2026",
+  "edition": 2026,
+  "host_countries": [
+    "Canada",
+    "États-Unis",
+    "Mexique"
+  ],
+  "groups": [
+    {
+      "id": "A",
+      "teams": [
+        "USA",
+        "Panama",
+        "Bolivia"
+      ]
+    },
+    {
+      "id": "B",
+      "teams": [
+        "Mexico",
+        "Jamaica",
+        "Venezuela"
+      ]
+    },
+    {
+      "id": "C",
+      "teams": [
+        "Canada",
+        "Morocco",
+        "New Zealand"
+      ]
+    },
+    {
+      "id": "D",
+      "teams": [
+        "Germany",
+        "Japan",
+        "Australia"
+      ]
+    },
+    {
+      "id": "E",
+      "teams": [
+        "Brazil",
+        "Switzerland",
+        "Cameroon"
+      ]
+    },
+    {
+      "id": "F",
+      "teams": [
+        "France",
+        "Belgium",
+        "Algeria"
+      ]
+    },
+    {
+      "id": "G",
+      "teams": [
+        "Argentina",
+        "Chile",
+        "Peru"
+      ]
+    },
+    {
+      "id": "H",
+      "teams": [
+        "England",
+        "Portugal",
+        "Iran"
+      ]
+    },
+    {
+      "id": "I",
+      "teams": [
+        "Spain",
+        "Netherlands",
+        "Senegal"
+      ]
+    },
+    {
+      "id": "J",
+      "teams": [
+        "Italy",
+        "Croatia",
+        "Egypt"
+      ]
+    },
+    {
+      "id": "K",
+      "teams": [
+        "Colombia",
+        "Costa Rica",
+        "Ecuador"
+      ]
+    },
+    {
+      "id": "L",
+      "teams": [
+        "South Korea",
+        "Uruguay",
+        "Qatar"
+      ]
+    },
+    {
+      "id": "M",
+      "teams": [
+        "Serbia",
+        "Czech Republic",
+        "Nigeria"
+      ]
+    },
+    {
+      "id": "N",
+      "teams": [
+        "Denmark",
+        "Austria",
+        "Honduras"
+      ]
+    },
+    {
+      "id": "O",
+      "teams": [
+        "Turkey",
+        "Ukraine",
+        "Saudi Arabia"
+      ]
+    },
+    {
+      "id": "P",
+      "teams": [
+        "Poland",
+        "Romania",
+        "El Salvador"
+      ]
+    }
+  ],
+  "teams": [
+    {
+      "name": "Algeria",
+      "code": "ALG"
+    },
+    {
+      "name": "Argentina",
+      "code": "ARG"
+    },
+    {
+      "name": "Australia",
+      "code": "AUS"
+    },
+    {
+      "name": "Austria",
+      "code": "AUT"
+    },
+    {
+      "name": "Belgium",
+      "code": "BEL"
+    },
+    {
+      "name": "Bolivia",
+      "code": "BOL"
+    },
+    {
+      "name": "Brazil",
+      "code": "BRA"
+    },
+    {
+      "name": "Cameroon",
+      "code": "CMR"
+    },
+    {
+      "name": "Canada",
+      "code": "CAN"
+    },
+    {
+      "name": "Chile",
+      "code": "CHI"
+    },
+    {
+      "name": "Colombia",
+      "code": "COL"
+    },
+    {
+      "name": "Costa Rica",
+      "code": "CRC"
+    },
+    {
+      "name": "Croatia",
+      "code": "CRO"
+    },
+    {
+      "name": "Czech Republic",
+      "code": "CZE"
+    },
+    {
+      "name": "Denmark",
+      "code": "DEN"
+    },
+    {
+      "name": "Ecuador",
+      "code": "ECU"
+    },
+    {
+      "name": "Egypt",
+      "code": "EGY"
+    },
+    {
+      "name": "El Salvador",
+      "code": "SLV"
+    },
+    {
+      "name": "England",
+      "code": "ENG"
+    },
+    {
+      "name": "France",
+      "code": "FRA"
+    },
+    {
+      "name": "Germany",
+      "code": "GER"
+    },
+    {
+      "name": "Honduras",
+      "code": "HON"
+    },
+    {
+      "name": "Iran",
+      "code": "IRN"
+    },
+    {
+      "name": "Italy",
+      "code": "ITA"
+    },
+    {
+      "name": "Jamaica",
+      "code": "JAM"
+    },
+    {
+      "name": "Japan",
+      "code": "JPN"
+    },
+    {
+      "name": "Mexico",
+      "code": "MEX"
+    },
+    {
+      "name": "Morocco",
+      "code": "MAR"
+    },
+    {
+      "name": "Netherlands",
+      "code": "NED"
+    },
+    {
+      "name": "New Zealand",
+      "code": "NZL"
+    },
+    {
+      "name": "Nigeria",
+      "code": "NGA"
+    },
+    {
+      "name": "Panama",
+      "code": "PAN"
+    },
+    {
+      "name": "Peru",
+      "code": "PER"
+    },
+    {
+      "name": "Poland",
+      "code": "POL"
+    },
+    {
+      "name": "Portugal",
+      "code": "POR"
+    },
+    {
+      "name": "Qatar",
+      "code": "QAT"
+    },
+    {
+      "name": "Romania",
+      "code": "ROU"
+    },
+    {
+      "name": "Saudi Arabia",
+      "code": "KSA"
+    },
+    {
+      "name": "Senegal",
+      "code": "SEN"
+    },
+    {
+      "name": "Serbia",
+      "code": "SRB"
+    },
+    {
+      "name": "South Korea",
+      "code": "KOR"
+    },
+    {
+      "name": "Spain",
+      "code": "ESP"
+    },
+    {
+      "name": "Switzerland",
+      "code": "SUI"
+    },
+    {
+      "name": "Turkey",
+      "code": "TUR"
+    },
+    {
+      "name": "USA",
+      "code": "USA"
+    },
+    {
+      "name": "Ukraine",
+      "code": "UKR"
+    },
+    {
+      "name": "Uruguay",
+      "code": "URU"
+    },
+    {
+      "name": "Venezuela",
+      "code": "VEN"
+    }
+  ],
+  "matches": [
+    {
+      "id": "GS-A-1",
+      "stage": "Groupe A",
+      "home_team": "USA",
+      "home_team_code": "USA",
+      "away_team": "Panama",
+      "away_team_code": "PAN",
+      "scheduled_at": "2026-06-11T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-A-2",
+      "stage": "Groupe A",
+      "home_team": "USA",
+      "home_team_code": "USA",
+      "away_team": "Bolivia",
+      "away_team_code": "BOL",
+      "scheduled_at": "2026-06-16T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-A-3",
+      "stage": "Groupe A",
+      "home_team": "Panama",
+      "home_team_code": "PAN",
+      "away_team": "Bolivia",
+      "away_team_code": "BOL",
+      "scheduled_at": "2026-06-21T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-B-1",
+      "stage": "Groupe B",
+      "home_team": "Mexico",
+      "home_team_code": "MEX",
+      "away_team": "Jamaica",
+      "away_team_code": "JAM",
+      "scheduled_at": "2026-06-12T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-B-2",
+      "stage": "Groupe B",
+      "home_team": "Mexico",
+      "home_team_code": "MEX",
+      "away_team": "Venezuela",
+      "away_team_code": "VEN",
+      "scheduled_at": "2026-06-17T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-B-3",
+      "stage": "Groupe B",
+      "home_team": "Jamaica",
+      "home_team_code": "JAM",
+      "away_team": "Venezuela",
+      "away_team_code": "VEN",
+      "scheduled_at": "2026-06-22T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-C-1",
+      "stage": "Groupe C",
+      "home_team": "Canada",
+      "home_team_code": "CAN",
+      "away_team": "Morocco",
+      "away_team_code": "MAR",
+      "scheduled_at": "2026-06-12T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-C-2",
+      "stage": "Groupe C",
+      "home_team": "Canada",
+      "home_team_code": "CAN",
+      "away_team": "New Zealand",
+      "away_team_code": "NZL",
+      "scheduled_at": "2026-06-17T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-C-3",
+      "stage": "Groupe C",
+      "home_team": "Morocco",
+      "home_team_code": "MAR",
+      "away_team": "New Zealand",
+      "away_team_code": "NZL",
+      "scheduled_at": "2026-06-22T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-D-1",
+      "stage": "Groupe D",
+      "home_team": "Germany",
+      "home_team_code": "GER",
+      "away_team": "Japan",
+      "away_team_code": "JPN",
+      "scheduled_at": "2026-06-13T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-D-2",
+      "stage": "Groupe D",
+      "home_team": "Germany",
+      "home_team_code": "GER",
+      "away_team": "Australia",
+      "away_team_code": "AUS",
+      "scheduled_at": "2026-06-18T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-D-3",
+      "stage": "Groupe D",
+      "home_team": "Japan",
+      "home_team_code": "JPN",
+      "away_team": "Australia",
+      "away_team_code": "AUS",
+      "scheduled_at": "2026-06-23T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-E-1",
+      "stage": "Groupe E",
+      "home_team": "Brazil",
+      "home_team_code": "BRA",
+      "away_team": "Switzerland",
+      "away_team_code": "SUI",
+      "scheduled_at": "2026-06-13T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-E-2",
+      "stage": "Groupe E",
+      "home_team": "Brazil",
+      "home_team_code": "BRA",
+      "away_team": "Cameroon",
+      "away_team_code": "CMR",
+      "scheduled_at": "2026-06-18T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-E-3",
+      "stage": "Groupe E",
+      "home_team": "Switzerland",
+      "home_team_code": "SUI",
+      "away_team": "Cameroon",
+      "away_team_code": "CMR",
+      "scheduled_at": "2026-06-23T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-F-1",
+      "stage": "Groupe F",
+      "home_team": "France",
+      "home_team_code": "FRA",
+      "away_team": "Belgium",
+      "away_team_code": "BEL",
+      "scheduled_at": "2026-06-14T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-F-2",
+      "stage": "Groupe F",
+      "home_team": "France",
+      "home_team_code": "FRA",
+      "away_team": "Algeria",
+      "away_team_code": "ALG",
+      "scheduled_at": "2026-06-19T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-F-3",
+      "stage": "Groupe F",
+      "home_team": "Belgium",
+      "home_team_code": "BEL",
+      "away_team": "Algeria",
+      "away_team_code": "ALG",
+      "scheduled_at": "2026-06-24T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-G-1",
+      "stage": "Groupe G",
+      "home_team": "Argentina",
+      "home_team_code": "ARG",
+      "away_team": "Chile",
+      "away_team_code": "CHI",
+      "scheduled_at": "2026-06-14T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-G-2",
+      "stage": "Groupe G",
+      "home_team": "Argentina",
+      "home_team_code": "ARG",
+      "away_team": "Peru",
+      "away_team_code": "PER",
+      "scheduled_at": "2026-06-19T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-G-3",
+      "stage": "Groupe G",
+      "home_team": "Chile",
+      "home_team_code": "CHI",
+      "away_team": "Peru",
+      "away_team_code": "PER",
+      "scheduled_at": "2026-06-24T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-H-1",
+      "stage": "Groupe H",
+      "home_team": "England",
+      "home_team_code": "ENG",
+      "away_team": "Portugal",
+      "away_team_code": "POR",
+      "scheduled_at": "2026-06-15T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-H-2",
+      "stage": "Groupe H",
+      "home_team": "England",
+      "home_team_code": "ENG",
+      "away_team": "Iran",
+      "away_team_code": "IRN",
+      "scheduled_at": "2026-06-20T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-H-3",
+      "stage": "Groupe H",
+      "home_team": "Portugal",
+      "home_team_code": "POR",
+      "away_team": "Iran",
+      "away_team_code": "IRN",
+      "scheduled_at": "2026-06-25T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-I-1",
+      "stage": "Groupe I",
+      "home_team": "Spain",
+      "home_team_code": "ESP",
+      "away_team": "Netherlands",
+      "away_team_code": "NED",
+      "scheduled_at": "2026-06-15T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-I-2",
+      "stage": "Groupe I",
+      "home_team": "Spain",
+      "home_team_code": "ESP",
+      "away_team": "Senegal",
+      "away_team_code": "SEN",
+      "scheduled_at": "2026-06-20T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-I-3",
+      "stage": "Groupe I",
+      "home_team": "Netherlands",
+      "home_team_code": "NED",
+      "away_team": "Senegal",
+      "away_team_code": "SEN",
+      "scheduled_at": "2026-06-25T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-J-1",
+      "stage": "Groupe J",
+      "home_team": "Italy",
+      "home_team_code": "ITA",
+      "away_team": "Croatia",
+      "away_team_code": "CRO",
+      "scheduled_at": "2026-06-16T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-J-2",
+      "stage": "Groupe J",
+      "home_team": "Italy",
+      "home_team_code": "ITA",
+      "away_team": "Egypt",
+      "away_team_code": "EGY",
+      "scheduled_at": "2026-06-21T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-J-3",
+      "stage": "Groupe J",
+      "home_team": "Croatia",
+      "home_team_code": "CRO",
+      "away_team": "Egypt",
+      "away_team_code": "EGY",
+      "scheduled_at": "2026-06-26T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-K-1",
+      "stage": "Groupe K",
+      "home_team": "Colombia",
+      "home_team_code": "COL",
+      "away_team": "Costa Rica",
+      "away_team_code": "CRC",
+      "scheduled_at": "2026-06-16T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-K-2",
+      "stage": "Groupe K",
+      "home_team": "Colombia",
+      "home_team_code": "COL",
+      "away_team": "Ecuador",
+      "away_team_code": "ECU",
+      "scheduled_at": "2026-06-21T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-K-3",
+      "stage": "Groupe K",
+      "home_team": "Costa Rica",
+      "home_team_code": "CRC",
+      "away_team": "Ecuador",
+      "away_team_code": "ECU",
+      "scheduled_at": "2026-06-26T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-L-1",
+      "stage": "Groupe L",
+      "home_team": "South Korea",
+      "home_team_code": "KOR",
+      "away_team": "Uruguay",
+      "away_team_code": "URU",
+      "scheduled_at": "2026-06-17T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-L-2",
+      "stage": "Groupe L",
+      "home_team": "South Korea",
+      "home_team_code": "KOR",
+      "away_team": "Qatar",
+      "away_team_code": "QAT",
+      "scheduled_at": "2026-06-22T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-L-3",
+      "stage": "Groupe L",
+      "home_team": "Uruguay",
+      "home_team_code": "URU",
+      "away_team": "Qatar",
+      "away_team_code": "QAT",
+      "scheduled_at": "2026-06-27T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-M-1",
+      "stage": "Groupe M",
+      "home_team": "Serbia",
+      "home_team_code": "SRB",
+      "away_team": "Czech Republic",
+      "away_team_code": "CZE",
+      "scheduled_at": "2026-06-17T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-M-2",
+      "stage": "Groupe M",
+      "home_team": "Serbia",
+      "home_team_code": "SRB",
+      "away_team": "Nigeria",
+      "away_team_code": "NGA",
+      "scheduled_at": "2026-06-22T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-M-3",
+      "stage": "Groupe M",
+      "home_team": "Czech Republic",
+      "home_team_code": "CZE",
+      "away_team": "Nigeria",
+      "away_team_code": "NGA",
+      "scheduled_at": "2026-06-27T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-N-1",
+      "stage": "Groupe N",
+      "home_team": "Denmark",
+      "home_team_code": "DEN",
+      "away_team": "Austria",
+      "away_team_code": "AUT",
+      "scheduled_at": "2026-06-18T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-N-2",
+      "stage": "Groupe N",
+      "home_team": "Denmark",
+      "home_team_code": "DEN",
+      "away_team": "Honduras",
+      "away_team_code": "HON",
+      "scheduled_at": "2026-06-23T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-N-3",
+      "stage": "Groupe N",
+      "home_team": "Austria",
+      "home_team_code": "AUT",
+      "away_team": "Honduras",
+      "away_team_code": "HON",
+      "scheduled_at": "2026-06-28T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-O-1",
+      "stage": "Groupe O",
+      "home_team": "Turkey",
+      "home_team_code": "TUR",
+      "away_team": "Ukraine",
+      "away_team_code": "UKR",
+      "scheduled_at": "2026-06-18T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-O-2",
+      "stage": "Groupe O",
+      "home_team": "Turkey",
+      "home_team_code": "TUR",
+      "away_team": "Saudi Arabia",
+      "away_team_code": "KSA",
+      "scheduled_at": "2026-06-23T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-O-3",
+      "stage": "Groupe O",
+      "home_team": "Ukraine",
+      "home_team_code": "UKR",
+      "away_team": "Saudi Arabia",
+      "away_team_code": "KSA",
+      "scheduled_at": "2026-06-28T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-P-1",
+      "stage": "Groupe P",
+      "home_team": "Poland",
+      "home_team_code": "POL",
+      "away_team": "Romania",
+      "away_team_code": "ROU",
+      "scheduled_at": "2026-06-19T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-P-2",
+      "stage": "Groupe P",
+      "home_team": "Poland",
+      "home_team_code": "POL",
+      "away_team": "El Salvador",
+      "away_team_code": "SLV",
+      "scheduled_at": "2026-06-24T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "GS-P-3",
+      "stage": "Groupe P",
+      "home_team": "Romania",
+      "home_team_code": "ROU",
+      "away_team": "El Salvador",
+      "away_team_code": "SLV",
+      "scheduled_at": "2026-06-29T17:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-1",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-03T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-2",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-03T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-3",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-04T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-4",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-04T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-5",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-05T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-6",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-05T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-7",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-06T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-8",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-06T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-9",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-07T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-10",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-07T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-11",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-08T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-12",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-08T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-13",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-09T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-14",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-09T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-15",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-10T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R32-16",
+      "stage": "Huitièmes de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-10T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R16-1",
+      "stage": "Quarts de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-10T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R16-2",
+      "stage": "Quarts de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-10T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R16-3",
+      "stage": "Quarts de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-11T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R16-4",
+      "stage": "Quarts de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-11T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R16-5",
+      "stage": "Quarts de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-12T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R16-6",
+      "stage": "Quarts de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-12T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R16-7",
+      "stage": "Quarts de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-13T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "R16-8",
+      "stage": "Quarts de finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-13T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "SF-1",
+      "stage": "Demi-finales",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-14T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "SF-2",
+      "stage": "Demi-finales",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-14T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "SF-3",
+      "stage": "Demi-finales",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-15T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "SF-4",
+      "stage": "Demi-finales",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-15T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "3P-1",
+      "stage": "Match pour la 3e place",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-18T20:00:00-04:00",
+      "venue": null
+    },
+    {
+      "id": "F-1",
+      "stage": "Finale",
+      "home_team": "À déterminer",
+      "home_team_code": "TBD",
+      "away_team": "À déterminer",
+      "away_team_code": "TBD",
+      "scheduled_at": "2026-07-19T20:00:00-04:00",
+      "venue": null
+    }
+  ]
+}

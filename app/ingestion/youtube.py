@@ -32,6 +32,9 @@ class DemoYouTubeSource:
     def get_recent_videos_for_channel(self, channel: ChannelConfig) -> list[dict[str, Any]]:
         return [item for item in self.load_recent_videos() if item.get("channel_id") == channel.id]
 
+    def search_videos_by_query(self, query: str, language: str, max_results: int = 10) -> list[dict[str, Any]]:
+        return []
+
 
 class YouTubeApiError(RuntimeError):
     pass
@@ -96,6 +99,49 @@ class RealYouTubeSource:
             if video_id in details_by_id
         ]
 
+    def search_videos_by_query(self, query: str, language: str, max_results: int = 10) -> list[dict[str, Any]]:
+        search_payload = self._fetch_json(
+            "search",
+            {
+                "part": "snippet",
+                "q": query,
+                "type": "video",
+                "relevanceLanguage": language,
+                "maxResults": max_results,
+                "order": "relevance",
+            },
+        )
+        video_ids = [
+            item.get("id", {}).get("videoId")
+            for item in search_payload.get("items", [])
+            if item.get("id", {}).get("videoId")
+        ]
+        if not video_ids:
+            return []
+        details_payload = self._fetch_json("videos", {"part": "snippet,contentDetails", "id": ",".join(video_ids)})
+        details_by_id = {item["id"]: item for item in details_payload.get("items", []) if item.get("id")}
+        results = []
+        for video_id in video_ids:
+            if video_id not in details_by_id:
+                continue
+            snippet = details_by_id[video_id].get("snippet", {})
+            content_details = details_by_id[video_id].get("contentDetails", {})
+            results.append({
+                "video_id": video_id,
+                "video_url": f"https://www.youtube.com/watch?v={video_id}",
+                "title": snippet.get("title", ""),
+                "description": snippet.get("description", ""),
+                "publish_date": snippet.get("publishedAt"),
+                "language": language,
+                "duration_seconds": parse_iso8601_duration(content_details.get("duration")),
+                "channel_id": "_search",
+                "tags": snippet.get("tags", []),
+                "source_payload": details_by_id[video_id],
+                "youtube_channel_id": snippet.get("channelId", ""),
+                "youtube_channel_name": snippet.get("channelTitle", ""),
+            })
+        return results
+
 
 class FallbackYouTubeSource:
     def __init__(self, primary: RealYouTubeSource, fallback: DemoYouTubeSource) -> None:
@@ -108,6 +154,13 @@ class FallbackYouTubeSource:
         except YouTubeApiError as exc:
             logger.warning("Falling back to demo YouTube ingestion for %s: %s", channel.id, exc)
             return self.fallback.get_recent_videos_for_channel(channel)
+
+    def search_videos_by_query(self, query: str, language: str, max_results: int = 10) -> list[dict[str, Any]]:
+        try:
+            return self.primary.search_videos_by_query(query, language, max_results)
+        except YouTubeApiError as exc:
+            logger.warning("Falling back to demo (empty) for query '%s': %s", query, exc)
+            return self.fallback.search_videos_by_query(query, language, max_results)
 
 
 def build_youtube_source(settings: Settings) -> DemoYouTubeSource | FallbackYouTubeSource:

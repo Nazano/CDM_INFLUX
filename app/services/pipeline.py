@@ -86,4 +86,8 @@ def bootstrap_demo_environment() -> Repository:
     pipeline.initialize()
     if pipeline.repository.is_empty():
         pipeline.run()
+    if not pipeline.repository.has_matches():
+        from app.services.match_ingestion import MatchIngestionPipeline
+        mp = MatchIngestionPipeline(pipeline.settings)
+        mp.seed_schedule()
     return pipeline.repository

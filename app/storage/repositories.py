@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
-from app.models.entities import Channel, Creator, ExtractedPredictions, Prediction, PredictionItem, Team, Transcript, Video
+from app.models.entities import Channel, Creator, ExtractedPredictions, Match, Prediction, PredictionItem, Team, Transcript, Video
 from app.storage.database import Database, dumps_json
 
 
@@ -321,3 +321,89 @@ class Repository:
     def is_empty(self) -> bool:
         with self.database.connection() as conn:
             return conn.execute("SELECT COUNT(*) FROM videos").fetchone()[0] == 0
+
+    def upsert_match(self, match: Match) -> None:
+        with self.database.connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO matches (id, tournament_stage, home_team_id, away_team_id, scheduled_at, metadata_json, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(id) DO UPDATE SET
+                    tournament_stage = excluded.tournament_stage,
+                    home_team_id = excluded.home_team_id,
+                    away_team_id = excluded.away_team_id,
+                    scheduled_at = excluded.scheduled_at,
+                    metadata_json = excluded.metadata_json,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (
+                    match.id,
+                    match.tournament_stage,
+                    match.home_team_id,
+                    match.away_team_id,
+                    match.scheduled_at.isoformat() if match.scheduled_at else None,
+                    dumps_json(match.metadata),
+                ),
+            )
+
+    def get_matches(self) -> list[dict[str, Any]]:
+        now_iso = datetime.now(UTC).isoformat()
+        with self.database.connection() as conn:
+            return [
+                dict(row)
+                for row in conn.execute(
+                    """
+                    SELECT
+                        m.id, m.tournament_stage, m.scheduled_at,
+                        m.metadata_json,
+                        ht.name AS home_team, ht.code AS home_team_code,
+                        at.name AS away_team, at.code AS away_team_code,
+                        CASE WHEN m.scheduled_at < ? THEN 1 ELSE 0 END AS is_past,
+                        (SELECT COUNT(*) FROM match_video_links mvl WHERE mvl.match_id = m.id) AS video_count
+                    FROM matches m
+                    LEFT JOIN teams ht ON ht.id = m.home_team_id
+                    LEFT JOIN teams at ON at.id = m.away_team_id
+                    ORDER BY m.scheduled_at
+                    """,
+                    (now_iso,),
+                )
+            ]
+
+    def link_video_to_match(self, match_id: str, video_id: str, relevance_score: float) -> None:
+        with self.database.connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO match_video_links (match_id, video_id, relevance_score)
+                VALUES (?, ?, ?)
+                ON CONFLICT(match_id, video_id) DO UPDATE SET
+                    relevance_score = excluded.relevance_score,
+                    linked_at = CURRENT_TIMESTAMP
+                """,
+                (match_id, video_id, relevance_score),
+            )
+
+    def list_videos_for_match(self, match_id: str) -> list[dict[str, Any]]:
+        with self.database.connection() as conn:
+            return [
+                dict(row)
+                for row in conn.execute(
+                    """
+                    SELECT v.id, v.video_id, v.title, v.language, v.publish_date, v.video_url,
+                           c.name AS channel_name, mvl.relevance_score,
+                           p.summary AS prediction_summary,
+                           t.status AS transcript_status
+                    FROM match_video_links mvl
+                    JOIN videos v ON v.id = mvl.video_id
+                    JOIN channels c ON c.id = v.channel_id
+                    LEFT JOIN predictions p ON p.video_id = v.id
+                    LEFT JOIN transcripts t ON t.video_id = v.id
+                    WHERE mvl.match_id = ?
+                    ORDER BY mvl.relevance_score DESC, v.publish_date DESC
+                    """,
+                    (match_id,),
+                )
+            ]
+
+    def has_matches(self) -> bool:
+        with self.database.connection() as conn:
+            return conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0] > 0

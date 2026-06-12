@@ -124,6 +124,17 @@ SCHEMA_STATEMENTS = [
     "CREATE INDEX IF NOT EXISTS idx_prediction_items_type ON prediction_items(item_type)",
     "CREATE INDEX IF NOT EXISTS idx_prediction_items_match_id ON prediction_items(match_id)",
     "CREATE INDEX IF NOT EXISTS idx_prediction_items_team_id ON prediction_items(team_id)",
+    """
+    CREATE TABLE IF NOT EXISTS match_video_links (
+        match_id TEXT NOT NULL REFERENCES matches(id),
+        video_id TEXT NOT NULL REFERENCES videos(id),
+        relevance_score REAL NOT NULL DEFAULT 0.0,
+        linked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (match_id, video_id)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_match_video_links_match ON match_video_links(match_id)",
+    "CREATE INDEX IF NOT EXISTS idx_match_video_links_video ON match_video_links(video_id)",
 ]
 
 
