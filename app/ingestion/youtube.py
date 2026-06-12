@@ -16,7 +16,7 @@ from app.utils.text import build_world_cup_search_query, contains_keywords, has_
 logger = logging.getLogger(__name__)
 YOUTUBE_API_BASE_URL = "https://www.googleapis.com/youtube/v3"
 YOUTUBE_DURATION_PATTERN = re.compile(
-    r"^P(T(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+)S)?)$"
+    r"^PT(?=(?:\d+H|\d+M|\d+S))(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+)S)?$"
 )
 
 

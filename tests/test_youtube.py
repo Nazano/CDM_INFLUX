@@ -22,6 +22,7 @@ def test_extract_youtube_identifiers() -> None:
 def test_parse_iso8601_duration() -> None:
     assert parse_iso8601_duration("PT1H2M3S") == 3723
     assert parse_iso8601_duration("PT45S") == 45
+    assert parse_iso8601_duration("PT") is None
     assert parse_iso8601_duration("P1DT2H") is None
 
 

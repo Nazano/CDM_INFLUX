@@ -29,7 +29,10 @@ def test_extract_transcript_fetches_youtube_transcript(monkeypatch) -> None:
 def test_extract_transcript_marks_unavailable_when_fetch_fails(monkeypatch) -> None:
     from youtube_transcript_api import NoTranscriptFound
 
-    monkeypatch.setattr("app.extraction.transcripts._fetch_youtube_transcript", lambda video_id, language: (_ for _ in ()).throw(NoTranscriptFound("video-123", ["fr"], None)))
+    def raise_not_found(video_id: str, language: str | None):
+        raise NoTranscriptFound(video_id, [language or "en"], None)
+
+    monkeypatch.setattr("app.extraction.transcripts._fetch_youtube_transcript", raise_not_found)
 
     transcript = extract_transcript("video-123", language="fr")
 

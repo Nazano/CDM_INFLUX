@@ -93,8 +93,8 @@ def _fetch_youtube_transcript(video_id: str, language: str | None) -> dict[str, 
     transcript = _build_youtube_transcript_client().list(video_id).find_transcript(_language_preferences(language)).fetch()
     segments = [
         TranscriptSegment(
-            start_seconds=max(0, floor(snippet.start)),
-            end_seconds=max(max(0, floor(snippet.start)) + 1, ceil(snippet.start + snippet.duration)),
+            start_seconds=(start_seconds := max(0, floor(snippet.start))),
+            end_seconds=max(start_seconds + 1, ceil(snippet.start + snippet.duration)),
             text=snippet.text.strip(),
         )
         for snippet in transcript

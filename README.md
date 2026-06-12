@@ -10,7 +10,7 @@ The first version uses **Streamlit only** to keep the stack simple and ship an e
 
 - YAML-based channel configuration
 - Demo YouTube ingestion pipeline with multilingual World Cup 2026 detection
-- Transcript extraction service with explicit status handling and simulated fallback
+- Transcript extraction via YouTube captions with explicit status handling and demo fallback
 - Rule-based prediction extraction with an optional Ollama extension point
 - SQLite storage with repositories and migration bootstrap
 - Streamlit dashboard with overview, explorer, video detail, creator comparison, match consensus and reliability views
@@ -58,7 +58,7 @@ This command:
 - creates the SQLite database in `data/cdm_influx.db`
 - loads `config/channels.yml`
 - ingests demo videos from `data/demo_videos.json`
-- extracts transcripts and predictions
+- extracts YouTube transcripts when available, otherwise uses demo transcripts or marks them unavailable
 - stores the results for the dashboard
 
 ## Launch the dashboard
@@ -88,6 +88,5 @@ pytest
 ## Notes for future evolution
 
 - **YouTube API integration**: the ingestion service already exposes clear TODO hooks where the real API client should be plugged in.
-- **Real transcript extraction**: the transcript service keeps explicit fallback statuses and can be replaced with a YouTube subtitle provider.
 - **Ollama integration**: `app/extraction/llm.py` contains the extension point for local LLM enrichment.
 - **FastAPI roadmap**: the `app/services` and `app/storage` layers are UI-agnostic so an internal API can be added with minimal changes.
