@@ -29,7 +29,6 @@ class DemoYouTubeSource:
             payload = json.load(handle)
         return payload.get("videos", [])
 
-    # TODO: replace this demo source with a real YouTube Data API integration.
     def get_recent_videos_for_channel(self, channel: ChannelConfig) -> list[dict[str, Any]]:
         return [item for item in self.load_recent_videos() if item.get("channel_id") == channel.id]
 
