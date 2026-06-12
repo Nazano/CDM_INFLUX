@@ -629,6 +629,8 @@ def render_analysis_health(repository) -> None:
 def render_analysis_queue(repository) -> None:
     """Queue view: pending, running, done."""
     st.title("🗂️ Queue des analyses")
+    if "queue_selected_run_id" not in st.session_state:
+        st.session_state["queue_selected_run_id"] = None
 
     matches = repository.get_matches()
     match_options = {m["id"]: f"{m.get('home_team') or 'TBD'} vs {m.get('away_team') or 'TBD'} ({m['tournament_stage']})" for m in matches}
@@ -651,6 +653,7 @@ def render_analysis_queue(repository) -> None:
         st.rerun()
 
     st.divider()
+    displayed_runs: dict[str, dict] = {}
 
     for status_label, status_val, icon in [
         ("⏱️ En cours", "running", "🔄"),
@@ -666,7 +669,14 @@ def render_analysis_queue(repository) -> None:
                 st.info("Aucun run dans cette catégorie.")
             else:
                 for run in runs:
+                    displayed_runs[run["id"]] = run
                     _render_run_row_compact(repository, run, match_options)
+
+    selected_run_id = st.session_state.get("queue_selected_run_id")
+    if selected_run_id and selected_run_id in displayed_runs:
+        st.divider()
+        st.subheader(f"🔎 Détails du run `{selected_run_id}`")
+        _render_run_row(repository, displayed_runs[selected_run_id], show_match=True)
 
 
 def render_match_consensus_for_match(repository, match_id: str) -> None:
@@ -858,6 +868,8 @@ def _render_run_row_compact(repository, run: dict, match_options: dict[str, str]
         if status == "queued":
             if st.button("▶ Lancer", key=f"queue-launch-{run_id}"):
                 _run_queued_pipeline_with_progress(run_id)
+        if st.button("🔎", key=f"queue-detail-{run_id}", help="Afficher les détails du run"):
+            st.session_state["queue_selected_run_id"] = run_id
 
 
 def _render_run_comparison(repository, baseline_id: str, candidate_id: str) -> None:
