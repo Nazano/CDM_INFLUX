@@ -11,7 +11,7 @@ from urllib.request import urlopen
 
 from app.config import ChannelConfig, Settings
 from app.models.entities import Channel, Creator, Video
-from app.utils.text import contains_keywords
+from app.utils.text import build_world_cup_search_query, contains_keywords, has_negated_world_cup_context
 
 logger = logging.getLogger(__name__)
 YOUTUBE_API_BASE_URL = "https://www.googleapis.com/youtube/v3"
@@ -76,6 +76,7 @@ class RealYouTubeSource:
                 "part": "snippet",
                 "channelId": channel_id,
                 "order": "date",
+                "q": build_world_cup_search_query(channel.language),
                 "type": "video",
                 "maxResults": self.max_results,
             },
@@ -191,14 +192,14 @@ def build_channel(channel_config: ChannelConfig) -> Channel:
 
 
 def is_world_cup_video(video_payload: dict[str, Any], channel_config: ChannelConfig) -> bool:
-    combined = " ".join(
-        [
-            video_payload.get("title", ""),
-            video_payload.get("description", ""),
-            " ".join(video_payload.get("tags", [])),
-        ]
-    )
-    return contains_keywords(combined, channel_config.language, channel_config.keywords)
+    title_and_tags = " ".join([video_payload.get("title", ""), " ".join(video_payload.get("tags", []))])
+    if contains_keywords(title_and_tags, channel_config.language, channel_config.keywords):
+        return True
+
+    description = video_payload.get("description", "")
+    if has_negated_world_cup_context(description, channel_config.language):
+        return False
+    return contains_keywords(description, channel_config.language, channel_config.keywords)
 
 
 def build_video(video_payload: dict[str, Any], channel: Channel) -> Video:

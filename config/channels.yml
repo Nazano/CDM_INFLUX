@@ -1,28 +1,25 @@
 channels:
-  - id: channel-fr-foot-vision
-    name: Foot Vision FR
-    url: https://youtube.com/@footvisionfr
+  - id: channel-en-libero-pod
+    name: Libero Pod
+    url: https://www.youtube.com/@liberopod
+    language: en
+    region: EU
+    keywords:
+      - world cup
+      - fifa world cup
+  - id: channel-fr-wiloo
+    name: Wiloo
+    url: https://www.youtube.com/@Wiloo
     language: fr
     region: FR
     keywords:
-      - bleus
-      - demi-finale
-      - coupe du monde 2026
-  - id: channel-en-tactical-hub
-    name: Tactical Hub
-    url: https://youtube.com/@tacticalhub
+      - coupe du monde
+      - mondial
+  - id: channel-en-sbs-sport-au
+    name: SBS Sport AU
+    url: https://www.youtube.com/@SBSSportau
     language: en
-    region: UK
+    region: AU
     keywords:
-      - world cup 2026
-      - knockout stage
-      - final prediction
-  - id: channel-es-rumbo-mundial
-    name: Rumbo Mundial
-    url: https://youtube.com/@rumbomundial
-    language: es
-    region: ES
-    keywords:
-      - mundial 2026
-      - clasificados
-      - pronóstico
+      - world cup
+      - fifa world cup

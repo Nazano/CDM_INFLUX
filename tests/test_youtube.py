@@ -1,13 +1,15 @@
 from app.config import ChannelConfig
-from app.ingestion.youtube import RealYouTubeSource, extract_youtube_channel_id, extract_youtube_handle, parse_iso8601_duration
+from app.ingestion.youtube import RealYouTubeSource, extract_youtube_channel_id, extract_youtube_handle, is_world_cup_video, parse_iso8601_duration
 
 
 class StubYouTubeSource(RealYouTubeSource):
     def __init__(self, responses: dict[str, dict]) -> None:
         super().__init__("test-key", max_results=5)
         self.responses = responses
+        self.calls: list[tuple[str, dict[str, object]]] = []
 
     def _fetch_json(self, resource: str, params: dict[str, object]) -> dict[str, object]:
+        self.calls.append((resource, params))
         return self.responses[resource]
 
 
@@ -59,3 +61,28 @@ def test_real_youtube_source_maps_recent_videos() -> None:
     assert videos[0]["youtube_channel_id"] == "UC123"
     assert videos[0]["video_url"] == "https://www.youtube.com/watch?v=abc123"
     assert videos[0]["duration_seconds"] == 725
+    assert next(params for resource, params in source.calls if resource == "search")["q"] == "coupe du monde"
+
+
+def test_is_world_cup_video_matches_generic_world_cup_terms() -> None:
+    channel = ChannelConfig(
+        id="channel-en-libero-pod",
+        name="Libero Pod",
+        url="https://www.youtube.com/@liberopod",
+        language="en",
+        keywords=[],
+    )
+
+    assert is_world_cup_video({"title": "World Cup preview", "description": "", "tags": []}, channel) is True
+
+
+def test_is_world_cup_video_ignores_negated_description() -> None:
+    channel = ChannelConfig(
+        id="channel-en-libero-pod",
+        name="Libero Pod",
+        url="https://www.youtube.com/@liberopod",
+        language="en",
+        keywords=[],
+    )
+
+    assert is_world_cup_video({"title": "Premier League preview", "description": "Nothing related to the World Cup here.", "tags": []}, channel) is False

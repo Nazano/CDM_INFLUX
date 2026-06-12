@@ -4,7 +4,9 @@ from app.config import DEFAULT_CONFIG_PATH, Settings, load_app_config, load_env_
 def test_load_app_config_reads_channels() -> None:
     config = load_app_config(DEFAULT_CONFIG_PATH)
     assert len(config.channels) == 3
-    assert config.channels[0].language == "fr"
+    assert config.channels[0].url == "https://www.youtube.com/@liberopod"
+    assert config.channels[1].language == "fr"
+    assert config.channels[2].name == "SBS Sport AU"
 
 
 def test_load_env_file_populates_youtube_settings(tmp_path, monkeypatch) -> None:
