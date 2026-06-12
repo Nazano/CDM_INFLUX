@@ -35,7 +35,7 @@ class Settings(BaseModel):
     demo_data_path: Path = DEFAULT_DATA_PATH
     db_path: Path = Field(default_factory=lambda: Path(os.getenv("CDM_INFLUX_DB_PATH", DEFAULT_DB_PATH)))
     youtube_api_key: str | None = Field(default_factory=lambda: os.getenv("YOUTUBE_API_KEY"))
-    youtube_max_results: int = Field(default_factory=lambda: os.getenv("YOUTUBE_MAX_RESULTS", "10"))
+    youtube_max_results: int = Field(default_factory=lambda: int(os.getenv("YOUTUBE_MAX_RESULTS", "10")))
 
 
 def load_env_file(path: Path = DEFAULT_ENV_PATH) -> None:
