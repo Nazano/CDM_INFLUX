@@ -225,6 +225,32 @@ class MatchIngestionPipeline:
             self.repository.upsert_match(match)
         return len(matches)
 
+    def seed_schedule_from_remote(self, force: bool = False) -> int:
+        """Fetch and store the match schedule from wheniskickoff.com.
+
+        Uses the ``meta`` field of the remote JSON to detect whether the
+        dataset has changed since the last successful fetch.  When the data
+        is unchanged and *force* is *False*, nothing is written to the
+        database and 0 is returned.
+
+        Args:
+            force: When *True*, always fetch and upsert even if the cached
+                   meta indicates the data has not changed.
+
+        Returns:
+            Number of matches upserted, or 0 when no update was needed.
+        """
+        from app.ingestion.wheniskickoff import fetch_matches_if_updated
+
+        matches, teams, updated = fetch_matches_if_updated(force=force)
+        if not updated:
+            return 0
+        for team in teams:
+            self.repository.upsert_team(team)
+        for match in matches:
+            self.repository.upsert_match(match)
+        return len(matches)
+
     def fetch_videos_for_match(self, match_id: str, max_results_per_query: int = 5) -> int:
         matches = [m for m in self.repository.get_matches() if m["id"] == match_id]
         if not matches:
