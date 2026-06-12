@@ -9,6 +9,7 @@ import streamlit as st
 
 from app.dashboard.data_access import (
     analyze_match_videos,
+    fetch_videos_for_match,
     get_dashboard_repository,
     get_ranked_consensus,
     run_analysis_pipeline,
@@ -398,9 +399,9 @@ def render_match_videos(repository, preselected_match_id: str | None = None) -> 
         max_results = st.slider("Résultats max par requête", 1, 10, 5, key=f"search-limit-{match_id}")
         if st.button("Lancer la recherche YouTube (FR + EN)", key=f"search-{match_id}"):
             with st.spinner("Recherche en cours…"):
-                count = fetch_videos_for_match(match_id, max_results)
-            if count > 0:
-                st.success(f"{count} vidéo(s) trouvée(s) et enregistrée(s).")
+                fetched_video_count = fetch_videos_for_match(match_id, max_results)
+            if fetched_video_count > 0:
+                st.success(f"{fetched_video_count} vidéo(s) trouvée(s) et enregistrée(s).")
                 _open_match_detail(match_id)
             else:
                 st.warning("Aucune vidéo trouvée. Vérifiez la clé API YouTube ou la disponibilité des résultats.")
