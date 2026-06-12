@@ -61,11 +61,14 @@ def build_matches(schedule: dict[str, Any]) -> list[Match]:
     return matches
 
 
+_TBD_PLACEHOLDERS = {"À déterminer", "TBD", "à déterminer"}
+
+
 def build_youtube_search_queries(match: Match) -> list[tuple[str, str]]:
     """Return a list of (query, language) tuples to search on YouTube for this match."""
     home = match.metadata.get("home_team_name", "")
     away = match.metadata.get("away_team_name", "")
-    if not home or not away or home == "À déterminer":
+    if not home or not away or home in _TBD_PLACEHOLDERS or away in _TBD_PLACEHOLDERS:
         return []
     queries = [
         (f"pronostic {home} {away} coupe du monde 2026", "fr"),

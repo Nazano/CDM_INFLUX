@@ -247,7 +247,7 @@ def render_match_videos(repository) -> None:
                 st.success(f"{count} vidéo(s) trouvée(s) et enregistrée(s).")
                 st.rerun()
             else:
-                st.warning("Aucune vidéo trouvée. Vérifiez votre clé API YouTube dans le fichier .env")
+                st.warning("Aucune vidéo trouvée. Il est possible qu'aucun résultat ne corresponde à ce match ou que la clé API YouTube soit manquante dans le fichier .env")
 
     # List videos for this match
     videos = repository.list_videos_for_match(match_id)

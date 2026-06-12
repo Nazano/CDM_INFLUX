@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 _SEARCH_CHANNEL_ID = "_search"
 _SEARCH_CREATOR_ID = "_search_creator"
+_TBD_PLACEHOLDER = "à déterminer"
 
 
 def _ensure_search_placeholders(repository: Repository) -> None:
@@ -49,13 +50,13 @@ def score_video_relevance(video_payload: dict[str, Any], match: Match) -> float:
     away = (match.metadata.get("away_team_name") or "").lower()
 
     score = 0.0
-    if home and home != "à déterminer" and home in text:
+    if home and home != _TBD_PLACEHOLDER and home in text:
         score += 0.35
-    if away and away != "à déterminer" and away in text:
+    if away and away != _TBD_PLACEHOLDER and away in text:
         score += 0.35
 
     # Bonus if both teams are in the title specifically
-    if home and away and home != "à déterminer" and home in title and away in title:
+    if home and away and home != _TBD_PLACEHOLDER and home in title and away in title:
         score += 0.15
 
     # Recency bonus: videos published within 7 days before the match date get bonus
