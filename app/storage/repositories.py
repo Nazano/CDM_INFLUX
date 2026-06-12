@@ -213,15 +213,31 @@ class Repository:
         filters = []
         params: list[Any] = []
         query = """
+            WITH latest_predictions AS (
+                SELECT p1.id, p1.video_id, p1.summary
+                FROM predictions p1
+                JOIN (
+                    SELECT video_id, MAX(updated_at) AS updated_at
+                    FROM predictions
+                    GROUP BY video_id
+                ) latest ON latest.video_id = p1.video_id AND latest.updated_at = p1.updated_at
+            ),
+            latest_transcripts AS (
+                SELECT t1.video_id, t1.status, t1.extracted_at
+                FROM transcripts t1
+                JOIN (
+                    SELECT video_id, MAX(extracted_at) AS extracted_at
+                    FROM transcripts
+                    GROUP BY video_id
+                ) latest ON latest.video_id = t1.video_id AND latest.extracted_at = t1.extracted_at
+            )
             SELECT v.id, v.video_id, v.title, v.language, v.publish_date, v.video_url,
                    c.name AS channel_name, p.summary AS prediction_summary,
-                   COALESCE(
-                       (SELECT extracted_at FROM transcripts WHERE video_id = v.id ORDER BY extracted_at DESC LIMIT 1),
-                       v.updated_at
-                   ) AS processed_at
+                   COALESCE(t.extracted_at, v.updated_at) AS processed_at
             FROM videos v
             JOIN channels c ON c.id = v.channel_id
-            LEFT JOIN predictions p ON p.video_id = v.id
+            LEFT JOIN latest_predictions p ON p.video_id = v.id
+            LEFT JOIN latest_transcripts t ON t.video_id = v.id
             LEFT JOIN prediction_items pi ON pi.prediction_id = p.id
         """
         if language:
@@ -357,16 +373,62 @@ class Repository:
                 dict(row)
                 for row in conn.execute(
                     """
+                    WITH latest_predictions AS (
+                        SELECT p1.id, p1.video_id, p1.confidence
+                        FROM predictions p1
+                        JOIN (
+                            SELECT video_id, MAX(updated_at) AS updated_at
+                            FROM predictions
+                            GROUP BY video_id
+                        ) latest ON latest.video_id = p1.video_id AND latest.updated_at = p1.updated_at
+                    ),
+                    score_rank AS (
+                        SELECT
+                            mvl.match_id,
+                            pi.value AS predicted_score,
+                            COUNT(*) AS score_votes,
+                            ROUND(AVG(pi.confidence), 2) AS avg_score_confidence,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY mvl.match_id
+                                ORDER BY COUNT(*) DESC, AVG(pi.confidence) DESC, pi.value
+                            ) AS score_rank
+                        FROM match_video_links mvl
+                        JOIN latest_predictions lp ON lp.video_id = mvl.video_id
+                        JOIN prediction_items pi ON pi.prediction_id = lp.id
+                        JOIN matches mx ON mx.id = mvl.match_id
+                        LEFT JOIN teams htx ON htx.id = mx.home_team_id
+                        LEFT JOIN teams atx ON atx.id = mx.away_team_id
+                        WHERE pi.item_type = 'exact_score'
+                          AND pi.subject IN (
+                              COALESCE(htx.name, '') || ' vs ' || COALESCE(atx.name, ''),
+                              COALESCE(atx.name, '') || ' vs ' || COALESCE(htx.name, '')
+                          )
+                        GROUP BY mvl.match_id, pi.value
+                    )
                     SELECT
                         m.id, m.tournament_stage, m.scheduled_at,
                         m.metadata_json,
                         ht.name AS home_team, ht.code AS home_team_code,
                         at.name AS away_team, at.code AS away_team_code,
                         CASE WHEN m.scheduled_at < ? THEN 1 ELSE 0 END AS is_past,
-                        (SELECT COUNT(*) FROM match_video_links mvl WHERE mvl.match_id = m.id) AS video_count
+                        COUNT(DISTINCT mvl.video_id) AS video_count,
+                        COUNT(DISTINCT t.video_id) AS analyzed_video_count,
+                        COUNT(DISTINCT lp.video_id) AS predicted_video_count,
+                        COUNT(DISTINCT lp.id) AS prediction_count,
+                        sr.predicted_score,
+                        COALESCE(sr.score_votes, 0) AS score_votes,
+                        COALESCE(sr.avg_score_confidence, 0) AS avg_score_confidence
                     FROM matches m
                     LEFT JOIN teams ht ON ht.id = m.home_team_id
                     LEFT JOIN teams at ON at.id = m.away_team_id
+                    LEFT JOIN match_video_links mvl ON mvl.match_id = m.id
+                    LEFT JOIN transcripts t ON t.video_id = mvl.video_id
+                    LEFT JOIN latest_predictions lp ON lp.video_id = mvl.video_id
+                    LEFT JOIN score_rank sr ON sr.match_id = m.id AND sr.score_rank = 1
+                    GROUP BY
+                        m.id, m.tournament_stage, m.scheduled_at, m.metadata_json,
+                        ht.name, ht.code, at.name, at.code,
+                        sr.predicted_score, sr.score_votes, sr.avg_score_confidence
                     ORDER BY m.scheduled_at
                     """,
                     (now_iso,),
@@ -392,19 +454,34 @@ class Repository:
                 dict(row)
                 for row in conn.execute(
                     """
+                    WITH latest_predictions AS (
+                        SELECT p1.id, p1.video_id, p1.summary
+                        FROM predictions p1
+                        JOIN (
+                            SELECT video_id, MAX(updated_at) AS updated_at
+                            FROM predictions
+                            GROUP BY video_id
+                        ) latest ON latest.video_id = p1.video_id AND latest.updated_at = p1.updated_at
+                    ),
+                    latest_transcripts AS (
+                        SELECT t1.video_id, t1.status, t1.extracted_at
+                        FROM transcripts t1
+                        JOIN (
+                            SELECT video_id, MAX(extracted_at) AS extracted_at
+                            FROM transcripts
+                            GROUP BY video_id
+                        ) latest ON latest.video_id = t1.video_id AND latest.extracted_at = t1.extracted_at
+                    )
                     SELECT v.id, v.video_id, v.title, v.language, v.publish_date, v.video_url,
                            c.name AS channel_name, mvl.relevance_score,
                            p.summary AS prediction_summary,
                            t.status AS transcript_status,
-                           COALESCE(
-                               (SELECT extracted_at FROM transcripts WHERE video_id = v.id ORDER BY extracted_at DESC LIMIT 1),
-                               v.updated_at
-                           ) AS processed_at
+                           COALESCE(t.extracted_at, v.updated_at) AS processed_at
                     FROM match_video_links mvl
                     JOIN videos v ON v.id = mvl.video_id
                     JOIN channels c ON c.id = v.channel_id
-                    LEFT JOIN predictions p ON p.video_id = v.id
-                    LEFT JOIN transcripts t ON t.video_id = v.id
+                    LEFT JOIN latest_predictions p ON p.video_id = v.id
+                    LEFT JOIN latest_transcripts t ON t.video_id = v.id
                     WHERE mvl.match_id = ?
                     ORDER BY processed_at DESC, mvl.relevance_score DESC
                     """,
