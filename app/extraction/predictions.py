@@ -29,7 +29,6 @@ WINNER_PATTERNS = [
 ]
 SCORE_PATTERN = re.compile(
     r"(?P<home>[A-Z][A-Za-z]+(?:\s[A-Z][A-Za-z]+)*)\s(?P<home_score>\d)\s*[-:]\s*(?P<away_score>\d)\s(?P<away>[A-Z][A-Za-z]+(?:\s[A-Z][A-Za-z]+)*)",
-    re.IGNORECASE,
 )
 QUALIFIED_PATTERN = re.compile(r"(?P<team>[A-Z][A-Za-z]+(?:\s[A-Z][A-Za-z]+)*) (?:qualify|qualified|qualifiée|clasifica|clasificado)", re.IGNORECASE)
 CONFIDENCE_TERMS = {

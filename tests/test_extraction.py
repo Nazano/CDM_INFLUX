@@ -48,3 +48,14 @@ def test_extract_predictions_detects_winner_and_score() -> None:
     assert "tournament_winner" in item_types
     assert "exact_score" in item_types
     assert any(item.value == "Brazil" for item in extracted.items if item.item_type == "tournament_winner")
+
+
+def test_extract_predictions_score_subject_contains_only_team_names() -> None:
+    """Away-team group must not consume trailing words after the team name."""
+    extracted = extract_predictions(
+        "France 2-1 Brazil en finale parce que le milieu français est plus stable."
+    )
+    score_items = [item for item in extracted.items if item.item_type == "exact_score"]
+    assert score_items, "An exact_score item should be detected"
+    assert score_items[0].subject == "France vs Brazil"
+    assert score_items[0].value == "2-1"
