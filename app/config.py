@@ -37,9 +37,14 @@ class Settings(BaseModel):
     db_path: Path = Field(default_factory=lambda: Path(os.getenv("CDM_INFLUX_DB_PATH", DEFAULT_DB_PATH)))
     chroma_path: Path = Field(default_factory=lambda: Path(os.getenv("CDM_INFLUX_CHROMA_PATH", DEFAULT_CHROMA_PATH)))
     youtube_api_key: str | None = Field(default_factory=lambda: os.getenv("YOUTUBE_API_KEY"))
+    youtube_captions_oauth_token: str | None = Field(default_factory=lambda: os.getenv("YOUTUBE_CAPTIONS_OAUTH_TOKEN"))
     youtube_max_results: int = Field(default_factory=lambda: int(os.getenv("YOUTUBE_MAX_RESULTS", "10")))
+    youtube_caption_batch_size: int = Field(default_factory=lambda: int(os.getenv("YOUTUBE_CAPTION_BATCH_SIZE", "10")))
     youtube_transcripts_enabled: bool = Field(
         default_factory=lambda: os.getenv("YOUTUBE_TRANSCRIPTS_ENABLED", "false").lower() in {"1", "true", "yes"}
+    )
+    youtube_transcript_fallback_delay_seconds: int = Field(
+        default_factory=lambda: int(os.getenv("YOUTUBE_TRANSCRIPT_FALLBACK_DELAY_SECONDS", "30"))
     )
     rag_enabled: bool = Field(default_factory=lambda: os.getenv("RAG_ENABLED", "false").lower() in {"1", "true", "yes"})
     ollama_base_url: str = Field(default_factory=lambda: os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))

@@ -253,7 +253,7 @@ class Repository:
                 ) latest ON latest.video_id = p1.video_id AND latest.updated_at = p1.updated_at
             ),
             latest_transcripts AS (
-                SELECT t1.video_id, t1.status, t1.extracted_at
+                SELECT t1.video_id, t1.status, t1.source, t1.extracted_at
                 FROM transcripts t1
                 JOIN (
                     SELECT video_id, MAX(extracted_at) AS extracted_at
@@ -555,6 +555,7 @@ class Repository:
                            c.name AS channel_name, mvl.relevance_score,
                            p.summary AS prediction_summary,
                            t.status AS transcript_status,
+                           t.source AS transcript_source,
                            COALESCE(t.extracted_at, v.updated_at) AS processed_at
                     FROM match_video_links mvl
                     JOIN videos v ON v.id = mvl.video_id

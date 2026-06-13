@@ -1,5 +1,5 @@
 from app.extraction.predictions import extract_predictions
-from app.extraction.transcripts import extract_transcript
+from app.extraction.transcripts import TranscriptRequest, extract_transcript, extract_transcripts
 
 
 def test_extract_transcript_uses_hint_when_available() -> None:
@@ -38,6 +38,55 @@ def test_extract_transcript_marks_unavailable_when_fetch_fails(monkeypatch) -> N
 
     assert transcript.status == "unavailable"
     assert transcript.text is None
+
+
+def test_extract_transcripts_uses_caption_api_before_fallback(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "app.extraction.transcripts._fetch_captions_batch",
+        lambda requests, settings: (
+            {
+                "video-123": extract_transcript(
+                    "video-123",
+                    transcript_hint="Sous-titre API",
+                    language="fr",
+                ).model_copy(update={"source": "youtube_caption_api"})
+            },
+            [],
+        ),
+    )
+
+    transcripts = extract_transcripts([TranscriptRequest(video_id="video-123", language="fr")], enabled=True)
+
+    assert transcripts[0].status == "available"
+    assert transcripts[0].source == "youtube_caption_api"
+    assert transcripts[0].text == "Sous-titre API"
+
+
+def test_extract_transcripts_applies_sequential_fallback_delay(monkeypatch) -> None:
+    sleep_calls: list[float] = []
+
+    monkeypatch.setattr("app.extraction.transcripts._fetch_captions_batch", lambda requests, settings: ({}, list(requests)))
+    monkeypatch.setattr(
+        "app.extraction.transcripts._fetch_youtube_transcript",
+        lambda video_id, language: {
+            "language": language or "en",
+            "segments": extract_transcript(video_id, transcript_hint=f"{video_id} text", language=language).segments,
+            "source": "youtube_transcript_api",
+        },
+    )
+
+    transcripts = extract_transcripts(
+        [
+            TranscriptRequest(video_id="video-1", language="fr"),
+            TranscriptRequest(video_id="video-2", language="fr"),
+        ],
+        enabled=True,
+        fallback_delay_seconds=30,
+        sleep_fn=sleep_calls.append,
+    )
+
+    assert [transcript.text for transcript in transcripts] == ["video-1 text", "video-2 text"]
+    assert sleep_calls == [30]
 
 
 def test_extract_predictions_detects_winner_and_score() -> None:

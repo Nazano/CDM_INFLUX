@@ -7,7 +7,7 @@ from typing import Any
 
 from app.config import Settings, get_settings
 from app.extraction.predictions import extract_predictions
-from app.extraction.transcripts import extract_transcript
+from app.extraction.transcripts import TranscriptRequest, extract_transcripts
 from app.ingestion.schedule import build_matches, build_teams, build_youtube_search_queries, load_schedule
 from app.ingestion.youtube import build_youtube_source
 from app.models.entities import AnalysisArtifact, AnalysisRun, AnalysisRunStep, AnalysisStepLog, Channel, Creator, Match, Prediction, Video
@@ -227,12 +227,20 @@ def extract_transcripts_for_match(
             logger.warning("RAG disabled for transcript extraction: %s", exc)
     videos_summary: list[dict[str, Any]] = []
 
-    for row in videos:
+    transcript_requests = [
+        TranscriptRequest(video_id=row["video_id"], language=row.get("language", "fr"))
+        for row in videos
+    ]
+    transcripts = extract_transcripts(
+        transcript_requests,
+        enabled=transcripts_enabled,
+        settings=settings,
+    )
+
+    for row, transcript in zip(videos, transcripts):
         vid_id = row["video_id"]
         db_video_id = row["id"]
         language = row.get("language", "fr")
-
-        transcript = extract_transcript(vid_id, language=language, enabled=transcripts_enabled)
         transcript.video_id = db_video_id
         transcript.id = f"transcript-{vid_id}"
         repository.save_transcript(transcript)
@@ -257,6 +265,7 @@ def extract_transcripts_for_match(
             "youtube_video_id": vid_id,
             "title": row.get("title", vid_id),
             "transcript_status": transcript.status,
+            "transcript_source": transcript.source,
             "prediction_items": 0,
             "prediction_summary": None,
             "language": language,
@@ -772,7 +781,7 @@ class MatchIngestionPipeline:
                     id=f"analysis-log-{uuid.uuid4().hex[:12]}",
                     step_id=step_id,
                     level=level,
-                    message=f"{video['title']} · transcript {video['transcript_status']}",
+                    message=f"{video['title']} · transcript {video['transcript_status']} ({video.get('transcript_source', 'unknown')})",
                     metadata=video,
                 )
             )

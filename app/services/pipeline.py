@@ -7,7 +7,7 @@ from typing import Any
 
 from app.config import AppConfig, Settings, get_settings, load_app_config
 from app.extraction.predictions import extract_predictions
-from app.extraction.transcripts import extract_transcript
+from app.extraction.transcripts import TranscriptRequest, extract_transcripts
 from app.ingestion.youtube import build_channel, build_creator, build_video, build_youtube_source, is_world_cup_video
 from app.models.entities import Prediction
 from app.rag.chroma_store import ChromaStore
@@ -38,6 +38,7 @@ class DemoPipeline:
         ingested_videos = 0
         extracted_predictions = 0
         rag_store = None
+        ingested_items: list[tuple[Any, dict[str, Any]]] = []
         if self.settings.rag_enabled:
             try:
                 rag_store = ChromaStore(
@@ -62,38 +63,48 @@ class DemoPipeline:
                 video = build_video(video_payload, channel)
                 self.repository.upsert_video(video)
                 ingested_videos += 1
+                ingested_items.append((video, transcript_map.get(video.video_id, {})))
 
-                transcript_source = transcript_map.get(video.video_id, {})
-                transcript = extract_transcript(
-                    video.video_id,
-                    transcript_hint=transcript_source.get("transcript_text"),
-                    language=video.language,
-                    transcript_segments=transcript_source.get("transcript_segments"),
-                )
-                transcript.video_id = video.id
-                transcript.id = f"transcript-{video.video_id}"
-                self.repository.save_transcript(transcript)
-                if rag_store and transcript.status == "available" and transcript.text:
-                    try:
-                        index_transcript_for_video(video.id, self.repository, rag_store)
-                    except Exception as exc:
-                        logger.warning("RAG indexing skipped for %s: %s", video.video_id, exc)
+        transcript_requests = [
+            TranscriptRequest(
+                video_id=video.video_id,
+                transcript_hint=transcript_source.get("transcript_text"),
+                language=video.language,
+                transcript_segments=transcript_source.get("transcript_segments"),
+            )
+            for video, transcript_source in ingested_items
+        ]
+        extracted_transcripts = extract_transcripts(
+            transcript_requests,
+            enabled=self.settings.youtube_transcripts_enabled,
+            settings=self.settings,
+        )
 
-                extracted = extract_predictions(transcript.text or "")
-                prediction = Prediction(
-                    id=f"prediction-{uuid.uuid4().hex[:12]}",
-                    video_id=video.id,
-                    transcript_id=transcript.id,
-                    extractor_version="rules-v1",
-                    language=video.language,
-                    summary=extracted.summary,
-                    confidence=extracted.confidence,
-                    raw_json=extracted.model_dump(mode="json"),
-                )
-                for item in extracted.items:
-                    item.prediction_id = prediction.id
-                self.repository.save_prediction(prediction, extracted)
-                extracted_predictions += len(extracted.items)
+        for (video, _), transcript in zip(ingested_items, extracted_transcripts):
+            transcript.video_id = video.id
+            transcript.id = f"transcript-{video.video_id}"
+            self.repository.save_transcript(transcript)
+            if rag_store and transcript.status == "available" and transcript.text:
+                try:
+                    index_transcript_for_video(video.id, self.repository, rag_store)
+                except Exception as exc:
+                    logger.warning("RAG indexing skipped for %s: %s", video.video_id, exc)
+
+            extracted = extract_predictions(transcript.text or "")
+            prediction = Prediction(
+                id=f"prediction-{uuid.uuid4().hex[:12]}",
+                video_id=video.id,
+                transcript_id=transcript.id,
+                extractor_version="rules-v1",
+                language=video.language,
+                summary=extracted.summary,
+                confidence=extracted.confidence,
+                raw_json=extracted.model_dump(mode="json"),
+            )
+            for item in extracted.items:
+                item.prediction_id = prediction.id
+            self.repository.save_prediction(prediction, extracted)
+            extracted_predictions += len(extracted.items)
 
         return {"videos": ingested_videos, "prediction_items": extracted_predictions}
 

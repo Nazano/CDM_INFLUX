@@ -316,6 +316,7 @@ def render_video_detail(repository) -> None:
     st.json(payload["video"])
     if payload["transcript"]:
         st.subheader("Transcript")
+        st.caption(_format_transcript_status(payload["transcript"].get("status"), payload["transcript"].get("source")))
         st.write(payload["transcript"].get("text") or "Transcript indisponible")
     if payload["prediction"]:
         st.subheader("Pronostics extraits")
@@ -430,16 +431,20 @@ def render_match_videos(repository, preselected_match_id: str | None = None) -> 
         return "🔴 Faible"
 
     videos_df["pertinence_label"] = videos_df["relevance_score"].apply(relevance_label)
+    videos_df["transcript_label"] = videos_df.apply(
+        lambda row: _format_transcript_status(row.get("transcript_status"), row.get("transcript_source")),
+        axis=1,
+    )
 
     st.dataframe(
-        videos_df[["title", "channel_name", "language", "date", "analysed_le", "pertinence_label", "transcript_status", "video_url"]].rename(columns={
+        videos_df[["title", "channel_name", "language", "date", "analysed_le", "pertinence_label", "transcript_label", "video_url"]].rename(columns={
             "title": "Titre",
             "channel_name": "Chaîne",
             "language": "Langue",
             "date": "Publication",
             "analysed_le": "Analysé le",
             "pertinence_label": "Pertinence",
-            "transcript_status": "Transcript",
+            "transcript_label": "Transcript",
             "video_url": "URL",
         }),
         use_container_width=True,
@@ -1145,6 +1150,28 @@ def _build_match_detail_header(match: dict) -> str:
 def _render_status_legend() -> None:
     legend = " · ".join(f"{value['badge']} {value['label']}" for value in _CARD_STYLE.values())
     st.caption(f"Codes couleur : {legend}")
+
+
+def _format_transcript_status(status: str | None, source: str | None) -> str:
+    status_key = (status or "unavailable").lower()
+    source_key = (source or "").lower()
+    source_label = "Source inconnue"
+    if source_key == "demo":
+        source_label = "Démo"
+    elif source_key == "transcripts_disabled":
+        source_label = "Extraction désactivée"
+    elif source_key.startswith("youtube_caption_api"):
+        source_label = "API captions YouTube"
+    elif source_key.startswith("youtube_transcript_api"):
+        source_label = "Fallback youtube-transcript-api"
+
+    status_labels = {
+        "available": "✅ Disponible",
+        "unavailable": "⚪ Indisponible",
+        "error": "❌ Erreur",
+        "simulated": "🧪 Simulé",
+    }
+    return f"{status_labels.get(status_key, status_key)} · {source_label}"
 
 
 def _format_match_datetime(value: str | None) -> str:
