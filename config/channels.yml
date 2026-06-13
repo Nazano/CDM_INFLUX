@@ -1,0 +1,25 @@
+channels:
+  - id: channel-en-libero-pod
+    name: Libero Pod
+    url: https://www.youtube.com/@liberopod
+    language: en
+    region: EU
+    keywords:
+      - world cup
+      - fifa world cup
+  - id: channel-fr-wiloo
+    name: Wiloo
+    url: https://www.youtube.com/@Wiloo
+    language: fr
+    region: FR
+    keywords:
+      - coupe du monde
+      - mondial
+  - id: channel-en-sbs-sport-au
+    name: SBS Sport AU
+    url: https://www.youtube.com/@SBSSportau
+    language: en
+    region: AU
+    keywords:
+      - world cup
+      - fifa world cup

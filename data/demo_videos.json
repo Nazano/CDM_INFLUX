@@ -1,0 +1,67 @@
+{
+  "videos": [
+    {
+      "channel_id": "channel-fr-wiloo",
+      "video_id": "fr001",
+      "video_url": "https://youtube.com/watch?v=fr001",
+      "title": "Coupe du monde 2026 : la France peut-elle aller au bout ?",
+      "description": "Analyse complète des favoris et des surprises pour la Coupe du monde 2026.",
+      "publish_date": "2026-05-10T18:30:00+00:00",
+      "language": "fr",
+      "duration_seconds": 840,
+      "tags": ["coupe du monde", "france", "prono"],
+      "transcript_text": "Je pense que la France gagnera la Coupe du Monde 2026. France 2-1 Brazil en finale parce que le milieu français est plus stable. Je suis très sûr que Kylian Mbappé fera la différence. Argentina qualified aussi mais moins convaincant.",
+      "transcript_segments": [
+        {"start_seconds": 0, "end_seconds": 14, "text": "Je pense que la France gagnera la Coupe du Monde 2026."},
+        {"start_seconds": 14, "end_seconds": 30, "text": "France 2-1 Brazil en finale parce que le milieu français est plus stable."},
+        {"start_seconds": 30, "end_seconds": 44, "text": "Je suis très sûr que Kylian Mbappé fera la différence."},
+        {"start_seconds": 44, "end_seconds": 60, "text": "Argentina qualified aussi mais moins convaincant."}
+      ]
+    },
+    {
+      "channel_id": "channel-en-libero-pod",
+      "video_id": "en001",
+      "video_url": "https://youtube.com/watch?v=en001",
+      "title": "World Cup 2026 predictions: Brazil vs Spain and my champion pick",
+      "description": "Match-by-match predictions and final champion call for the FIFA World Cup.",
+      "publish_date": "2026-05-12T20:00:00+00:00",
+      "language": "en",
+      "duration_seconds": 920,
+      "tags": ["world cup", "brazil", "spain"],
+      "transcript_text": "Brazil will win the World Cup. Brazil 3-2 Spain because their attack depth is unmatched. England qualified from the group and USA 1-1 Mexico feels likely.",
+      "transcript_segments": [
+        {"start_seconds": 0, "end_seconds": 12, "text": "Brazil will win the World Cup."},
+        {"start_seconds": 12, "end_seconds": 28, "text": "Brazil 3-2 Spain because their attack depth is unmatched."},
+        {"start_seconds": 28, "end_seconds": 40, "text": "England qualified from the group and USA 1-1 Mexico feels likely."}
+      ]
+    },
+    {
+      "channel_id": "channel-en-sbs-sport-au",
+      "video_id": "au001",
+      "video_url": "https://youtube.com/watch?v=au001",
+      "title": "World Cup watch: Australia, Argentina and the knockout picture",
+      "description": "Our latest World Cup breakdown with sleeper picks and knockout-stage calls.",
+      "publish_date": "2026-05-15T21:00:00+00:00",
+      "language": "en",
+      "duration_seconds": 780,
+      "tags": ["world cup", "australia", "argentina"],
+      "transcript_text": "Argentina will win the World Cup. Australia 1-0 USA because their press is more consistent. Canada qualified and Uruguay could surprise everyone.",
+      "transcript_segments": [
+        {"start_seconds": 0, "end_seconds": 11, "text": "Argentina will win the World Cup."},
+        {"start_seconds": 11, "end_seconds": 26, "text": "Australia 1-0 USA because their press is more consistent."},
+        {"start_seconds": 26, "end_seconds": 38, "text": "Canada qualified and Uruguay could surprise everyone."}
+      ]
+    },
+    {
+      "channel_id": "channel-en-libero-pod",
+      "video_id": "en999",
+      "video_url": "https://youtube.com/watch?v=en999",
+      "title": "Premier League summer transfers overview",
+      "description": "Premier League transfer roundup and pre-season talking points.",
+      "publish_date": "2026-05-09T10:00:00+00:00",
+      "language": "en",
+      "duration_seconds": 600,
+      "tags": ["premier league", "transfers"]
+    }
+  ]
+}
